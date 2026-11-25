@@ -1,0 +1,33 @@
+# Netlify deploys only the frontend (apps/web). Node version comes from .nvmrc.
+[build]
+  command = "npm run build -w @joy/web"
+  publish = "apps/web/dist"
+
+# Forward API + uploads to the Express API (currently a laptop exposed via ngrok).
+# The ngrok header skips its free-tier browser interstitial, which would otherwise return HTML.
+# If the tunnel is down, the site falls back to the built-in seed content.
+[[redirects]]
+  from = "/api/*"
+  to = "https://pulmonary-creation-smolder.ngrok-free.dev/api/:splat"
+  status = 200
+  force = true
+  headers = {ngrok-skip-browser-warning = "true"}
+
+[[redirects]]
+  from = "/uploads/*"
+  to = "https://pulmonary-creation-smolder.ngrok-free.dev/uploads/:splat"
+  status = 200
+  force = true
+  headers = {ngrok-skip-browser-warning = "true"}
+
+# SPA fallback so React Router deep links (/blog/…, /projects/…) don't 404 on refresh.
+[[redirects]]
+  from = "/*"
+  to = "/index.html"
+  status = 200
+
+# Vite asset filenames are content-hashed, so they can be cached forever.
+[[headers]]
+  for = "/assets/*"
+  [headers.values]
+    Cache-Control = "public, max-age=31536000, immutable"

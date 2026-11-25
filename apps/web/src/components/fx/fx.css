@@ -1,0 +1,723 @@
+/* ==========================================================================
+   fx: motion & atmosphere primitives (components/fx/*)
+   --------------------------------------------------------------------------
+   - Every class is prefixed fx-, every keyframe is named fx-*.
+     (fx-pulse lives in base.css with .dot-live; it is not redefined here.)
+   - Only transform / opacity / filter are animated.
+   - Tokens come from styles/tokens.css; fallbacks are given where an fx
+     primitive could reasonably be rendered outside the token scope.
+   - Visitor pause (section 15) and reduced motion (section 16, last; JS
+     also checks the preference).
+   ========================================================================== */
+
+
+/* --------------------------------------------------------------------------
+   0. Shared
+   -------------------------------------------------------------------------- */
+
+/* Visually hidden text for assistive tech (same as .sr-only, self-contained). */
+.fx-sr {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  clip-path: inset(50%);
+  white-space: nowrap;
+  border: 0;
+}
+
+
+/* --------------------------------------------------------------------------
+   1. Cursor follower  <Cursor/>
+      .fx-cursor[data-variant=default|link|label|hide][data-visible][data-pressed]
+   -------------------------------------------------------------------------- */
+.fx-cursor {
+  position: fixed;
+  top: 0;
+  left: 0;
+  z-index: var(--z-cursor, 90);
+  width: 0;
+  height: 0;
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity 260ms var(--ease-out);
+}
+.fx-cursor[data-visible='true'] { opacity: 1; }
+
+.fx-cursor__ring {
+  --fx-cursor-scale: 1;
+  --fx-cursor-press: 1;
+  position: absolute;
+  top: -17px;
+  left: -17px;
+  width: 34px;
+  height: 34px;
+  border: 1px solid rgba(238, 242, 247, 0.5);
+  border-radius: 50%;
+  background-color: rgba(var(--c-mint-rgb, 179, 246, 208), 0);
+  transform: scale(calc(var(--fx-cursor-scale) * var(--fx-cursor-press)));
+  transition:
+    transform 450ms var(--ease-out),
+    opacity 220ms var(--ease-out),
+    background-color 300ms var(--ease-out),
+    border-color 300ms var(--ease-out);
+}
+.fx-cursor[data-variant='link'] .fx-cursor__ring {
+  --fx-cursor-scale: 1.88; /* 34px -> 64px */
+  border-color: rgba(var(--c-mint-rgb, 179, 246, 208), 0.5);
+  background-color: rgba(var(--c-mint-rgb, 179, 246, 208), 0.08);
+}
+.fx-cursor[data-variant='label'] .fx-cursor__ring {
+  --fx-cursor-scale: 0.3;
+  opacity: 0;
+}
+.fx-cursor[data-pressed='true'] .fx-cursor__ring { --fx-cursor-press: 0.82; }
+
+.fx-cursor__label {
+  position: absolute;
+  top: 0;
+  left: 0;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5em;
+  padding: 0.8em 1.15em;
+  border-radius: var(--r-pill, 999px);
+  background: var(--c-mint, #b3f6d0);
+  color: var(--c-ink-0, #05070b);
+  font-family: var(--f-mono);
+  font-size: 0.68rem;
+  font-weight: 600;
+  line-height: 1;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  white-space: nowrap;
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.6),
+    0 12px 32px -10px rgba(var(--c-signal-rgb, 92, 240, 168), 0.55);
+  opacity: 0;
+  transform: translate(-50%, -50%) scale(0.5);
+  transition:
+    transform 450ms var(--ease-out),
+    opacity 200ms var(--ease-out);
+}
+.fx-cursor[data-variant='label'] .fx-cursor__label {
+  opacity: 1;
+  transform: translate(-50%, -50%) scale(1);
+}
+.fx-cursor[data-variant='label'][data-pressed='true'] .fx-cursor__label {
+  transform: translate(-50%, -50%) scale(0.92);
+}
+.fx-cursor__glyph {
+  font-size: 1.15em;
+  letter-spacing: 0;
+}
+
+
+/* --------------------------------------------------------------------------
+   2. Magnetic  <Magnetic/>
+   -------------------------------------------------------------------------- */
+.fx-magnetic { display: inline-block; }
+
+
+/* --------------------------------------------------------------------------
+   3. Headline word reveal  <RevealText/>
+      The word box is padded (and the padding cancelled with negative margins)
+      so the clip-path mask covers ascenders, descenders and italic overhang
+      without changing layout. The inner word travels its own padded height
+      plus a little, which always clears the mask, whatever the line-height.
+   -------------------------------------------------------------------------- */
+.fx-reveal-text { display: inline; }
+
+.fx-word {
+  display: inline-block;
+  max-width: 100%;
+  padding: 0.2em 0.14em 0.26em 0.06em;
+  margin: -0.2em -0.14em -0.26em -0.06em;
+  clip-path: inset(0);
+}
+
+.fx-word__inner {
+  display: inline-block;
+  /* 100% is the outer word's content box, which excludes this element's own
+     (cancelled) inline padding: add it back, or every word would wrap. */
+  max-width: calc(100% + 0.2em);
+  overflow-wrap: break-word;
+  /* Room for glyph overflow so per-word gradients paint whole glyphs. */
+  padding: 0.18em 0.12em 0.24em 0.04em;
+  margin: -0.18em -0.12em -0.24em -0.04em;
+  transform: translate3d(0, calc(100% + 0.12em), 0);
+  transition: transform var(--d-headline, 1000ms) var(--ease-out);
+  transition-delay: calc(var(--fx-delay, 0s) + var(--fx-i, 0) * var(--fx-stagger, 0.06s));
+}
+.fx-reveal-text[data-shown='true'] .fx-word__inner { transform: none; }
+
+/* A gradient class on the RevealText root itself: the root must not paint
+   its own text-clipped background (it cannot follow the moving words);
+   the words paint the gradient instead (below). */
+.fx-reveal-text.serif-accent,
+.fx-reveal-text.text-gradient {
+  padding-inline-end: 0;
+  margin-inline-end: 0;
+  background: none;
+  -webkit-background-clip: border-box;
+  background-clip: border-box;
+}
+
+/* Gradient text per word: each word shows its own slice of ONE gradient
+   (background N words wide, offset by the word index), so the phrase reads
+   as a continuous mint -> cyan -> violet sweep. */
+.serif-accent .fx-word__inner,
+.text-gradient .fx-word__inner {
+  background: var(--grad-signal);
+  background-size: calc(var(--fx-n, 1) * 100%) 100%;
+  background-position: calc(var(--fx-i, 0) / max(var(--fx-n, 1) - 1, 1) * 100%) 0;
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+  -webkit-text-fill-color: transparent;
+}
+
+
+/* --------------------------------------------------------------------------
+   4. Scroll highlight  <ScrollHighlight/>  (opacity driven inline by JS)
+   -------------------------------------------------------------------------- */
+.fx-highlight__word { opacity: 0.3; } /* = DIM in ScrollHighlight.tsx */
+
+
+/* --------------------------------------------------------------------------
+   5. Counter  <Counter/>: invisible final value sizes the box (no shift).
+   -------------------------------------------------------------------------- */
+.fx-counter { font-variant-numeric: tabular-nums; }
+.fx-counter__stack {
+  display: inline-grid;
+  justify-items: start;
+}
+.fx-counter__sizer,
+.fx-counter__value {
+  grid-area: 1 / 1;
+  white-space: nowrap;
+}
+.fx-counter__sizer { visibility: hidden; }
+
+
+/* --------------------------------------------------------------------------
+   6. Marquee  <Marquee/>
+      .fx-marquee (root, positioned: anchors the toggle)
+        > .fx-marquee__viewport (clips + edge fade) > .fx-marquee__track
+        > .fx-motion-toggle (first marquee of a group only; may be portaled)
+   -------------------------------------------------------------------------- */
+.fx-marquee {
+  --fx-marquee-gap: clamp(1.5rem, 3vw, 3rem);
+  position: relative;
+  display: flex;
+  min-width: 0;
+}
+.fx-marquee__viewport {
+  display: flex;
+  flex: 1 1 auto;
+  min-width: 0;
+  overflow: hidden;
+  /* The track is thousands of px wide: never let it become the marquee's
+     intrinsic width (a grid / flex parent would otherwise grow to fit it,
+     and the copy count measured from that width would grow with it). */
+  contain: inline-size;
+  -webkit-mask-image: linear-gradient(90deg, transparent, #000 9%, #000 91%, transparent);
+  mask-image: linear-gradient(90deg, transparent, #000 9%, #000 91%, transparent);
+}
+.fx-marquee__track {
+  display: flex;
+  flex: none;
+  width: max-content;
+  animation: fx-marquee var(--fx-marquee-duration, 40s) linear infinite;
+  will-change: transform;
+}
+.fx-marquee--reverse .fx-marquee__track { animation-direction: reverse; }
+.fx-marquee--pausable:hover .fx-marquee__track,
+.fx-marquee:focus-within .fx-marquee__track { animation-play-state: paused; }
+
+.fx-marquee__group {
+  display: flex;
+  flex: none;
+  align-items: center;
+  gap: var(--fx-marquee-gap);
+  /* Trailing gap = inner gap, so the seam between copies is invisible. */
+  padding-inline-end: var(--fx-marquee-gap);
+}
+
+/* Reduced motion: one static row that wraps (no viewport, no fade). */
+.fx-marquee--static { overflow: hidden; }
+.fx-marquee--static .fx-marquee__group {
+  flex: 1 1 auto;
+  flex-wrap: wrap;
+  justify-content: center;
+  row-gap: 0.75rem;
+  padding-inline-end: 0;
+}
+
+/* "Pause motion" toggle: a small mono tab sitting ON the bottom edge line of
+   the marquee band (like a label on a diagram line), right gutter.
+   Opaque ink so the line is interrupted behind it. */
+.fx-motion-toggle {
+  position: absolute;
+  right: var(--gutter, 24px);
+  bottom: 0;
+  z-index: 2;
+  display: inline-flex;
+  align-items: center;
+  gap: 9px;
+  min-height: 30px;
+  padding: 0 13px 0 11px;
+  border: 1px solid var(--c-line-strong, rgba(255, 255, 255, 0.14));
+  border-radius: var(--r-pill, 999px);
+  background: var(--c-ink-1, #080b11);
+  color: var(--c-text-2, #a7b2c0);
+  font-family: var(--f-mono);
+  font-size: 0.64rem;
+  font-weight: 500;
+  line-height: 1;
+  letter-spacing: var(--ls-label, 0.14em);
+  text-transform: uppercase;
+  white-space: nowrap;
+  transform: translateY(50%);
+  transition:
+    color var(--d-hover, 220ms) var(--ease-out),
+    border-color var(--d-hover, 220ms) var(--ease-out),
+    background-color var(--d-hover, 220ms) var(--ease-out),
+    box-shadow var(--d-hover, 220ms) var(--ease-out);
+}
+/* Larger touch target than the drawn pill (WCAG 2.5.8). */
+.fx-motion-toggle::before {
+  content: '';
+  position: absolute;
+  inset: -8px -4px;
+}
+.fx-motion-toggle:hover {
+  border-color: rgba(var(--c-mint-rgb, 179, 246, 208), 0.38);
+  color: var(--c-text, #eef2f7);
+}
+.fx-motion-toggle[aria-pressed='true'] {
+  border-color: rgba(var(--c-mint-rgb, 179, 246, 208), 0.5);
+  background: color-mix(in srgb, var(--c-ink-1, #080b11) 88%, var(--c-mint, #b3f6d0));
+  color: var(--c-mint, #b3f6d0);
+  box-shadow: 0 0 22px -6px rgba(var(--c-signal-rgb, 92, 240, 168), 0.45);
+}
+
+/* Pause glyph (two bars) drawn in CSS; filled mint while pressed. */
+.fx-motion-toggle__icon {
+  position: relative;
+  flex: none;
+  width: 8px;
+  height: 9px;
+  border-inline: 2.5px solid currentColor;
+  border-radius: 1px;
+}
+
+@keyframes fx-marquee {
+  from { transform: translate3d(0, 0, 0); }
+  to { transform: translate3d(-50%, 0, 0); }
+}
+
+
+/* --------------------------------------------------------------------------
+   7. Spotlight  .fx-spotlight + useSpotlight()  (--mx / --my set by JS)
+      ::before  1px border glow (mask-composite: exclude keeps only the ring)
+      ::after   faint surface glow behind the content
+      Tinted by --accent-rgb (set by .accent--*), signal otherwise.
+      Size via --fx-spot-size, ring offset via --fx-spot-inset.
+      :where() keeps position overridable.
+   -------------------------------------------------------------------------- */
+:where(.fx-spotlight) {
+  position: relative;
+  isolation: isolate;
+}
+.fx-spotlight::before,
+.fx-spotlight::after {
+  content: '';
+  position: absolute;
+  /* 0 = just inside the card's own border. Use -1px to sit ON a 1px border
+     (only when the card does not clip its overflow). */
+  inset: var(--fx-spot-inset, 0px);
+  border-radius: inherit;
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity 450ms var(--ease-out);
+}
+.fx-spotlight::before {
+  z-index: 2;
+  padding: 1px;
+  background: radial-gradient(
+    var(--fx-spot-size, 360px) circle at var(--mx, 50%) var(--my, 50%),
+    rgba(var(--accent-rgb, 92, 240, 168), 0.9),
+    rgba(var(--accent-rgb, 92, 240, 168), 0.55) 14%,
+    rgba(var(--accent-rgb, 92, 240, 168), 0.14) 42%,
+    transparent 72%
+  );
+  -webkit-mask:
+    linear-gradient(#000 0 0) content-box,
+    linear-gradient(#000 0 0);
+  -webkit-mask-composite: xor;
+  mask:
+    linear-gradient(#000 0 0) content-box,
+    linear-gradient(#000 0 0);
+  mask-composite: exclude;
+}
+.fx-spotlight::after {
+  z-index: -1;
+  background: radial-gradient(
+    calc(var(--fx-spot-size, 360px) * 1.6) circle at var(--mx, 50%) var(--my, 50%),
+    rgba(var(--accent-rgb, 92, 240, 168), 0.09),
+    transparent 62%
+  );
+}
+.fx-spotlight:focus-within::before,
+.fx-spotlight:focus-within::after { opacity: 1; }
+@media (hover: hover) {
+  .fx-spotlight:hover::before,
+  .fx-spotlight:hover::after { opacity: 1; }
+}
+
+
+/* --------------------------------------------------------------------------
+   8. Tilt  <Tilt/>  (radius inherits wrapper -> inner -> glare)
+   -------------------------------------------------------------------------- */
+.fx-tilt { perspective: 1100px; }
+.fx-tilt__inner {
+  position: relative;
+  height: 100%;
+  border-radius: inherit;
+  /* Flat: the wrapper's perspective already projects the rotation, and
+     preserve-3d would disable backdrop-filter on .glass descendants. */
+  transform-style: flat;
+}
+/* <Tilt depth>: real 3D for translateZ() children (no glass inside). */
+.fx-tilt--depth > .fx-tilt__inner { transform-style: preserve-3d; }
+.fx-tilt__glare {
+  position: absolute;
+  inset: 0;
+  z-index: 3;
+  border-radius: inherit;
+  pointer-events: none;
+  opacity: 0;
+}
+
+
+/* --------------------------------------------------------------------------
+   9. Scroll progress  <ScrollProgress/>  (scaleX set inline by JS)
+   -------------------------------------------------------------------------- */
+.fx-progress {
+  position: fixed;
+  top: 0;
+  right: 0;
+  left: 0;
+  z-index: var(--z-progress, 60);
+  height: 2px;
+  background: var(--grad-signal);
+  box-shadow: 0 0 14px rgba(var(--c-signal-rgb, 92, 240, 168), 0.45);
+  transform: scaleX(0);
+  transform-origin: 0 50%;
+  pointer-events: none;
+}
+
+
+/* --------------------------------------------------------------------------
+   10. Letter roll  <RollText/> inside any .fx-roll-host
+       Masked with clip-path on a padded box (keeps the text baseline).
+   -------------------------------------------------------------------------- */
+.fx-roll {
+  position: relative;
+  display: inline-block;
+  padding-inline: 0.08em;
+  margin-inline: -0.08em;
+  line-height: 1.25;
+  white-space: nowrap;
+  clip-path: inset(0);
+}
+.fx-roll__layer { display: block; }
+.fx-roll__layer--next {
+  position: absolute;
+  inset: 0;
+  padding-inline: 0.08em;
+}
+.fx-roll__char {
+  display: inline-block;
+  white-space: pre;
+  transition: transform 560ms var(--ease-out);
+  transition-delay: calc(var(--fx-i, 0) * 14ms);
+}
+.fx-roll__layer--next .fx-roll__char { transform: translate3d(0, 110%, 0); }
+
+.fx-roll-host:focus-visible .fx-roll__layer:not(.fx-roll__layer--next) .fx-roll__char {
+  transform: translate3d(0, -110%, 0);
+}
+.fx-roll-host:focus-visible .fx-roll__layer--next .fx-roll__char { transform: none; }
+@media (hover: hover) {
+  .fx-roll-host:hover .fx-roll__layer:not(.fx-roll__layer--next) .fx-roll__char {
+    transform: translate3d(0, -110%, 0);
+  }
+  .fx-roll-host:hover .fx-roll__layer--next .fx-roll__char { transform: none; }
+}
+
+
+/* --------------------------------------------------------------------------
+   11. Text scramble  <TextScramble/>: sizer keeps the real text's box.
+   -------------------------------------------------------------------------- */
+.fx-scramble__stack {
+  display: inline-grid;
+  justify-items: start;
+}
+.fx-scramble__sizer,
+.fx-scramble__text { grid-area: 1 / 1; }
+.fx-scramble__sizer { visibility: hidden; }
+
+
+/* --------------------------------------------------------------------------
+   12. Local time  <LocalTime/>
+   -------------------------------------------------------------------------- */
+.fx-time {
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+.fx-time__colon {
+  display: inline-block;
+  animation: fx-blink 1.4s var(--ease-in-out) infinite;
+}
+.fx-time__zone { opacity: 0.7; }
+
+@keyframes fx-blink {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.2; }
+}
+
+
+/* --------------------------------------------------------------------------
+   13. Preloader  <Preloader/>  (.fx-preloader[data-phase=count|exit])
+       Curtain wipes up with a curved trailing edge (the "skirt"); its
+       content drifts the other way and fades, which reads as depth.
+       Timings mirror Preloader.tsx (COUNT 980 + HOLD 80 + EXIT 620 ms).
+   -------------------------------------------------------------------------- */
+.fx-preloader {
+  position: fixed;
+  inset: 0;
+  z-index: var(--z-preloader, 100);
+  overflow: hidden;
+  cursor: progress;
+  -webkit-user-select: none;
+  user-select: none;
+}
+.fx-preloader[data-phase='exit'] { pointer-events: none; }
+
+.fx-preloader__curtain {
+  position: absolute;
+  inset: 0;
+  background: var(--c-ink-0, #05070b);
+  transition: transform 620ms var(--ease-in-out);
+  will-change: transform;
+}
+.fx-preloader[data-phase='exit'] .fx-preloader__curtain {
+  transform: translate3d(0, calc(-100% - 22vh), 0);
+}
+
+.fx-preloader__skirt {
+  position: absolute;
+  top: calc(100% - 1px);
+  left: -12%;
+  width: 124%;
+  height: 22vh;
+  border-radius: 0 0 50% 50% / 0 0 100% 100%;
+  background: var(--c-ink-0, #05070b);
+  box-shadow:
+    0 1px 0 rgba(var(--c-mint-rgb, 179, 246, 208), 0.28),
+    0 24px 60px -18px rgba(var(--c-signal-rgb, 92, 240, 168), 0.22);
+  transform: scaleY(0);
+  transform-origin: 50% 0;
+  transition: transform 620ms var(--ease-out);
+}
+.fx-preloader[data-phase='exit'] .fx-preloader__skirt { transform: scaleY(1); }
+
+.fx-preloader__inner {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  grid-template-rows: auto 1fr auto auto;
+  row-gap: clamp(14px, 2vw, 22px);
+  padding: clamp(22px, 4vw, 48px) var(--gutter, 24px);
+  /* The faint signal glow lives here (not on the curtain) so it fades out
+     with the content instead of leaving a seam above the curved edge. */
+  background: radial-gradient(70% 55% at 50% 115%, rgba(var(--c-signal-rgb, 92, 240, 168), 0.07), transparent 70%);
+  transition:
+    transform 620ms var(--ease-in-out),
+    opacity 380ms var(--ease-out);
+}
+.fx-preloader[data-phase='exit'] .fx-preloader__inner {
+  opacity: 0;
+  transform: translate3d(0, 34vh, 0);
+}
+
+.fx-preloader__row {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 16px;
+}
+.fx-preloader__label {
+  color: var(--c-text-3, #808d9b);
+  font-family: var(--f-mono);
+  font-size: var(--t-label, 0.72rem);
+  font-weight: 500;
+  line-height: 1.4;
+  letter-spacing: var(--ls-label, 0.14em);
+  text-transform: uppercase;
+}
+
+.fx-preloader__wordmark {
+  align-self: end;
+  display: flex;
+  margin: 0;
+  padding: 0.12em 0.1em 0.28em 0;
+  margin-bottom: -0.08em;
+  color: var(--c-text, #eef2f7);
+  font-family: var(--f-display);
+  /* "joy/mollik" (10 chars) is ~4.2em wide: fills phones, capped on desktop.
+     Longer names (--fx-chars, set by JS) shrink to fit between the gutters. */
+  font-size: min(
+    clamp(3.4rem, 18vw, 11rem),
+    calc((100vw - 2 * var(--gutter, 24px)) / (var(--fx-chars, 10) * 0.46))
+  );
+  font-weight: 500;
+  line-height: 0.9;
+  letter-spacing: -0.055em;
+  clip-path: inset(0);
+}
+.fx-preloader__char {
+  display: inline-block;
+  transform: translate3d(0, calc(100% + 0.4em), 0);
+  animation: fx-rise 900ms var(--ease-out) forwards;
+  animation-delay: calc(60ms + var(--fx-i, 0) * 34ms);
+}
+.fx-preloader__char--accent {
+  color: var(--c-signal, #5cf0a8);
+  text-shadow: 0 0 28px rgba(var(--c-signal-rgb, 92, 240, 168), 0.45);
+}
+
+.fx-preloader__count {
+  color: var(--c-text, #eef2f7);
+  font-family: var(--f-mono);
+  font-size: clamp(2.25rem, 5.4vw, 4.5rem);
+  font-weight: 400;
+  line-height: 1;
+  letter-spacing: -0.04em;
+  font-variant-numeric: tabular-nums;
+}
+
+.fx-preloader__line {
+  position: relative;
+  display: block;
+  height: 1px;
+  overflow: hidden;
+  background: var(--c-line, rgba(255, 255, 255, 0.08));
+}
+.fx-preloader__line-fill {
+  position: absolute;
+  inset: 0;
+  background: var(--grad-signal);
+  box-shadow: 0 0 12px rgba(var(--c-signal-rgb, 92, 240, 168), 0.6);
+  transform: scaleX(0);
+  transform-origin: 0 50%;
+}
+
+@keyframes fx-rise {
+  to { transform: translate3d(0, 0, 0); }
+}
+
+
+/* --------------------------------------------------------------------------
+   14. Ambient layer  <AmbientLayer/>
+       Glows: fixed at z-index 0 (mount before <main>: positioned content
+       paints above). Grain: above everything but the preloader. Neither
+       ever receives pointer events.
+   -------------------------------------------------------------------------- */
+.fx-ambient {
+  position: fixed;
+  inset: 0;
+  z-index: 0;
+  overflow: hidden;
+  pointer-events: none;
+}
+.fx-ambient__glow {
+  position: absolute;
+  width: 80vmax;
+  height: 80vmax;
+  border-radius: 50%;
+  will-change: transform;
+}
+.fx-ambient__glow--mint {
+  top: -38vmax;
+  left: -26vmax;
+  background: radial-gradient(closest-side, rgba(var(--c-signal-rgb, 92, 240, 168), 0.075), transparent);
+  animation: fx-drift 34s var(--ease-in-out) infinite alternate;
+}
+.fx-ambient__glow--violet {
+  right: -30vmax;
+  bottom: -42vmax;
+  background: radial-gradient(closest-side, rgba(var(--c-violet-rgb, 165, 173, 255), 0.07), transparent);
+  animation: fx-drift 40s var(--ease-in-out) -12s infinite alternate-reverse;
+}
+
+.fx-grain {
+  position: fixed;
+  inset: -64px;
+  z-index: var(--z-grain, 95);
+  pointer-events: none;
+  opacity: 0.045;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='240' height='240'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.82' numOctaves='3' stitchTiles='stitch'/%3E%3CfeColorMatrix type='saturate' values='0'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+  background-size: 240px 240px;
+  animation: fx-grain 1.1s steps(6) infinite;
+}
+
+@keyframes fx-drift {
+  0% { transform: translate3d(0, 0, 0) scale(1); }
+  50% { transform: translate3d(14vw, 12vh, 0) scale(1.12); }
+  100% { transform: translate3d(-6vw, 22vh, 0) scale(0.94); }
+}
+@keyframes fx-grain {
+  0% { transform: translate3d(0, 0, 0); }
+  20% { transform: translate3d(-28px, 18px, 0); }
+  40% { transform: translate3d(22px, -30px, 0); }
+  60% { transform: translate3d(-14px, -22px, 0); }
+  80% { transform: translate3d(30px, 26px, 0); }
+  100% { transform: translate3d(0, 0, 0); }
+}
+
+
+/* --------------------------------------------------------------------------
+   15. Motion paused by the visitor (<Marquee/> toggle -> lib/motion.ts
+       setMotionPaused -> :root[data-motion='paused']). Loops freeze where
+       they are (no jump back to frame 0); the colon simply stays lit.
+   -------------------------------------------------------------------------- */
+:root[data-motion='paused'] .fx-marquee__track,
+:root[data-motion='paused'] .fx-ambient__glow,
+:root[data-motion='paused'] .fx-grain { animation-play-state: paused; }
+:root[data-motion='paused'] .fx-time__colon { animation: none; }
+
+
+/* --------------------------------------------------------------------------
+   16. Reduced motion: final states, no loops. (base.css also shortens every
+       animation / transition globally; these make the intent explicit.)
+   -------------------------------------------------------------------------- */
+@media (prefers-reduced-motion: reduce) {
+  .fx-cursor { display: none; }
+  .fx-word__inner,
+  .fx-roll__char { transition: none; }
+  .fx-word__inner { transform: none; }
+  .fx-roll__layer--next { display: none; }
+  .fx-roll-host:hover .fx-roll__layer:not(.fx-roll__layer--next) .fx-roll__char,
+  .fx-roll-host:focus-visible .fx-roll__layer:not(.fx-roll__layer--next) .fx-roll__char { transform: none; }
+  .fx-marquee__track { animation: none; }
+  .fx-time__colon { animation: none; }
+  .fx-ambient__glow,
+  .fx-grain { animation: none; }
+  .fx-preloader { display: none; }
+}

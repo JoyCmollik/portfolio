@@ -1,0 +1,625 @@
+/* ==========================================================================
+   Home hero (components/home/Hero.tsx)
+   --------------------------------------------------------------------------
+   Layers: .fx-shader (WebGL aurora) -> .grid-bg -> vignette/scrim -> content.
+   Layout: 12-col grid, copy (1-7) + arch portrait (8-12), bottom meta strip.
+   Keyframes: home-*. Classes: home-hero*, home-portrait*, home-orbits*, home-chip*.
+   ========================================================================== */
+
+.home-hero {
+  /* Bottom of the aurora fades into the page (marquee band below). */
+  --fx-shader-fade: 32%;
+  --fx-shader-fade-color: var(--c-ink-1);
+  --fx-shader-vignette: 0.55;
+  --arch: 50% 50% var(--r-lg) var(--r-lg) / 40% 40% var(--r-lg) var(--r-lg);
+  position: relative;
+  isolation: isolate;
+  display: flex;
+  flex-direction: column;
+  min-height: max(100svh, 720px);
+  padding-top: clamp(104px, 13vh, 140px);
+  overflow: hidden;
+  background: var(--c-ink-1);
+}
+
+.home-hero__shader { z-index: 0; }
+
+.home-hero__grid {
+  z-index: 1;
+  opacity: 0.85;
+  -webkit-mask-image: radial-gradient(ellipse 70% 70% at 62% 42%, #000 18%, transparent 76%);
+  mask-image: radial-gradient(ellipse 70% 70% at 62% 42%, #000 18%, transparent 76%);
+}
+
+/* Legibility scrim behind the copy + a warm echo of the portrait's rim light. */
+.home-hero__vignette {
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  pointer-events: none;
+  background:
+    linear-gradient(90deg, rgba(var(--c-ink-1-rgb), 0.62) 0%, rgba(var(--c-ink-1-rgb), 0.2) 48%, transparent 70%),
+    radial-gradient(38% 46% at 86% 52%, rgba(var(--c-amber-rgb), 0.07), transparent 70%),
+    linear-gradient(180deg, transparent 72%, var(--c-ink-1) 100%);
+}
+
+
+/* --------------------------------------------------------------------------
+   Layout
+   -------------------------------------------------------------------------- */
+.home-hero__layout {
+  position: relative;
+  z-index: 2;
+  flex: 1;
+  display: grid;
+  grid-template-columns: repeat(12, minmax(0, 1fr));
+  column-gap: clamp(16px, 2vw, 28px);
+  align-items: center;
+  padding-block: clamp(8px, 2vh, 24px) clamp(40px, 6vh, 72px);
+}
+
+.home-hero__copy {
+  grid-column: 1 / 8;
+  position: relative;
+  z-index: 3;
+  will-change: transform;
+}
+
+.home-hero__visual {
+  grid-column: 8 / 13;
+  position: relative;
+  z-index: 2;
+  width: 100%;
+  max-width: 470px;
+  justify-self: end;
+}
+
+
+/* --------------------------------------------------------------------------
+   Copy
+   -------------------------------------------------------------------------- */
+.home-hero__kicker {
+  display: inline-flex;
+  align-items: center;
+  gap: 12px;
+  max-width: 100%;
+  margin: 0 0 clamp(22px, 3.6vh, 36px);
+  padding: 9px 16px 9px 14px;
+  border: 1px solid var(--c-line-strong);
+  border-radius: var(--r-pill);
+  background: rgba(var(--c-ink-1-rgb), 0.45);
+  -webkit-backdrop-filter: blur(14px) saturate(140%);
+  backdrop-filter: blur(14px) saturate(140%);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.06);
+  color: var(--c-text-2);
+  font-family: var(--f-mono);
+  font-size: var(--t-label);
+  font-weight: 500;
+  line-height: 1.35;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+
+.home-hero__title {
+  font-size: clamp(2.75rem, 6.25vw, 6.4rem);
+  /* Room for the serif italic descenders inside the masked words. */
+  padding-bottom: 0.04em;
+}
+.home-hero__title .serif-accent { font-size: 1.07em; }
+
+.home-hero__lead {
+  max-width: 35rem;
+  margin-top: clamp(22px, 3.4vh, 34px);
+}
+
+.home-hero__ctas {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 14px;
+  margin-top: clamp(28px, 4.4vh, 46px);
+}
+
+
+/* --------------------------------------------------------------------------
+   Portrait stage: orbits + aura + tilted arch card + floating chips
+   -------------------------------------------------------------------------- */
+.home-hero__stage {
+  position: relative;
+  aspect-ratio: 4 / 5;
+  will-change: transform;
+}
+
+/* Soft orbit rings behind the portrait. */
+.home-orbits {
+  position: absolute;
+  top: 46%;
+  left: 50%;
+  width: 150%;
+  aspect-ratio: 1;
+  transform: translate(-50%, -50%);
+  pointer-events: none;
+  -webkit-mask-image: radial-gradient(closest-side, #000 62%, transparent 100%);
+  mask-image: radial-gradient(closest-side, #000 62%, transparent 100%);
+}
+.home-orbits__ring {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  border: 1px solid rgba(255, 255, 255, 0.07);
+  border-radius: 50%;
+  translate: -50% -50%;
+  animation: home-orbit 46s linear infinite;
+}
+.home-orbits__ring--a { width: 74%; aspect-ratio: 1; }
+.home-orbits__ring--b {
+  width: 92%;
+  aspect-ratio: 1;
+  border-style: dashed;
+  border-color: rgba(255, 255, 255, 0.06);
+  animation-duration: 70s;
+  animation-direction: reverse;
+}
+.home-orbits__ring--c {
+  width: 58%;
+  aspect-ratio: 1;
+  border-color: rgba(var(--c-mint-rgb), 0.1);
+  animation-duration: 32s;
+}
+/* A travelling "planet" on each ring. */
+.home-orbits__ring i {
+  position: absolute;
+  top: -3px;
+  left: 50%;
+  width: 6px;
+  height: 6px;
+  margin-left: -3px;
+  border-radius: 50%;
+  background: var(--c-signal);
+  box-shadow: 0 0 14px 2px rgba(var(--c-signal-rgb), 0.55);
+}
+.home-orbits__ring--b i {
+  top: auto;
+  bottom: -3px;
+  background: var(--c-violet);
+  box-shadow: 0 0 14px 2px rgba(var(--c-violet-rgb), 0.55);
+}
+.home-orbits__ring--c i {
+  top: 50%;
+  left: -3px;
+  margin: -3px 0 0;
+  background: var(--c-amber);
+  box-shadow: 0 0 14px 2px rgba(var(--c-amber-rgb), 0.6);
+}
+
+@keyframes home-orbit {
+  to { transform: rotate(360deg); }
+}
+
+/* Warm + signal light pooling behind the card. */
+.home-portrait__aura {
+  position: absolute;
+  inset: -8% -14% -4%;
+  pointer-events: none;
+  background:
+    radial-gradient(46% 42% at 76% 46%, rgba(var(--c-amber-rgb), 0.2), transparent 72%),
+    radial-gradient(48% 40% at 22% 72%, rgba(var(--c-signal-rgb), 0.14), transparent 72%),
+    radial-gradient(40% 34% at 50% 8%, rgba(var(--c-violet-rgb), 0.12), transparent 72%);
+}
+
+/* Tilt wrapper (.fx-tilt) */
+.home-portrait {
+  position: relative;
+  z-index: 1;
+  height: 100%;
+  border-radius: var(--arch);
+}
+/* The tilt's inner layer defaults to preserve-3d. Chromium does not apply
+   backdrop-filter inside a 3D rendering context, so the chips' glass would be
+   a thin tint with the arch's conic border cutting through their text.
+   Flatten it: the whole card (photo + chips) still tilts as one plane, and
+   the chips get real frosted glass. */
+.home-portrait > .fx-tilt__inner { transform-style: flat; }
+
+/* Animated conic border: a rotating oversized conic square, clipped by the arch. */
+.home-portrait__frame {
+  position: relative;
+  height: 100%;
+  padding: 1.5px;
+  overflow: hidden;
+  isolation: isolate;
+  border-radius: var(--arch);
+  background: rgba(255, 255, 255, 0.08);
+  box-shadow:
+    0 50px 120px -40px rgba(0, 0, 0, 0.95),
+    0 0 90px -30px rgba(var(--c-signal-rgb), 0.35);
+}
+.home-portrait__frame::before {
+  content: '';
+  position: absolute;
+  z-index: -1;
+  top: 50%;
+  left: 50%;
+  width: 190%;
+  aspect-ratio: 1;
+  background: conic-gradient(
+    from 0deg,
+    rgba(var(--c-mint-rgb), 0.95),
+    rgba(var(--c-cyan-rgb), 0.55) 18%,
+    rgba(var(--c-violet-rgb), 0.95) 36%,
+    rgba(255, 255, 255, 0.06) 50%,
+    rgba(var(--c-amber-rgb), 0.95) 66%,
+    rgba(255, 255, 255, 0.06) 82%,
+    rgba(var(--c-mint-rgb), 0.95)
+  );
+  transform: translate(-50%, -50%) rotate(0deg);
+  animation: home-spin 9s linear infinite;
+}
+@keyframes home-spin {
+  to { transform: translate(-50%, -50%) rotate(360deg); }
+}
+
+.home-portrait__photo {
+  position: relative;
+  height: 100%;
+  overflow: hidden;
+  border-radius: var(--arch);
+  background: radial-gradient(80% 60% at 70% 40%, #1a1410, #07090d 70%);
+}
+.home-portrait__img {
+  position: absolute;
+  top: -8%;
+  left: 0;
+  width: 100%;
+  height: 116%;
+  max-width: none;
+  object-fit: cover;
+  object-position: center 25%;
+  transition: transform 1.2s var(--ease-out);
+}
+.home-portrait:hover .home-portrait__img { transform: scale(1.025); }
+
+.home-portrait__shade {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  border-radius: inherit;
+  background:
+    linear-gradient(180deg, rgba(var(--c-ink-1-rgb), 0) 55%, rgba(var(--c-ink-1-rgb), 0.55) 100%),
+    radial-gradient(90% 60% at 50% 0%, rgba(var(--c-mint-rgb), 0.06), transparent 70%);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.12);
+}
+
+
+/* --------------------------------------------------------------------------
+   Floating glass chips (frosted, riding on the tilting card)
+   -------------------------------------------------------------------------- */
+.home-chip {
+  position: absolute;
+  z-index: 4;
+}
+.home-chip--status { top: 10%; right: -10%; }
+.home-chip--role { bottom: 16%; left: -19%; }
+.home-chip--time { bottom: 4%; right: -7%; }
+
+.home-chip__float {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 11px 16px 11px 13px;
+  border-color: var(--c-line-strong);
+  border-radius: var(--r-md);
+  background: rgba(var(--c-ink-1-rgb), 0.55);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.08),
+    0 18px 50px -18px rgba(0, 0, 0, 0.85);
+  white-space: nowrap;
+  animation: home-float 6.4s var(--ease-in-out) infinite;
+}
+.home-chip--status .home-chip__float {
+  padding: 10px 16px 10px 14px;
+  border-radius: var(--r-pill);
+}
+.home-chip--role .home-chip__float {
+  animation-duration: 7.6s;
+  animation-delay: -2.4s;
+}
+.home-chip--time .home-chip__float {
+  animation-duration: 5.6s;
+  animation-delay: -4.1s;
+}
+
+@keyframes home-float {
+  0%, 100% { transform: translate3d(0, 0, 0); }
+  50% { transform: translate3d(0, -9px, 0); }
+}
+
+/* No backdrop blur available: near-opaque fill so nothing behind the chip
+   (photo edge, arch border) competes with its text. */
+@supports not ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
+  .home-chip__float { background: rgba(var(--c-ink-1-rgb), 0.88); }
+}
+
+.home-chip__mono {
+  color: var(--c-text-2);
+  font-family: var(--f-mono);
+  font-size: 0.74rem;
+  letter-spacing: 0.01em;
+}
+.home-chip__mono b {
+  color: var(--c-mint);
+  font-weight: 500;
+}
+
+.home-chip__icon {
+  display: grid;
+  flex: none;
+  place-items: center;
+  width: 38px;
+  height: 38px;
+  border: 1px solid rgba(var(--c-mint-rgb), 0.22);
+  border-radius: var(--r-sm);
+  background: rgba(var(--c-mint-rgb), 0.08);
+  color: var(--c-mint);
+}
+.home-chip__icon svg { width: 18px; height: 18px; }
+.home-chip__icon--sm {
+  width: 32px;
+  height: 32px;
+  border-color: rgba(var(--c-amber-rgb), 0.24);
+  background: rgba(var(--c-amber-rgb), 0.08);
+  color: var(--c-amber);
+}
+.home-chip__icon--sm svg { width: 15px; height: 15px; }
+
+.home-chip__stack {
+  display: grid;
+  gap: 3px;
+}
+.home-chip__label {
+  color: var(--c-text-3);
+  font-family: var(--f-mono);
+  font-size: 0.64rem;
+  font-weight: 500;
+  line-height: 1.2;
+  letter-spacing: var(--ls-label);
+  text-transform: uppercase;
+}
+.home-chip__strong {
+  color: var(--c-text);
+  font-family: var(--f-display);
+  font-size: 0.95rem;
+  font-weight: 600;
+  line-height: 1.2;
+  letter-spacing: -0.01em;
+}
+.home-chip__time {
+  color: var(--c-text);
+  font-family: var(--f-mono);
+  font-size: 0.86rem;
+  font-weight: 500;
+  line-height: 1.2;
+}
+
+
+/* --------------------------------------------------------------------------
+   Bottom strip: location · availability | scroll cue | index
+   -------------------------------------------------------------------------- */
+.home-hero__strip-wrap {
+  position: relative;
+  z-index: 3;
+}
+
+.home-hero__strip {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
+  align-items: center;
+  gap: 24px;
+  padding-block: 20px 26px;
+  border-top: 1px solid var(--c-line);
+}
+
+/* Dividers sit in the column gap, left of every item. The list clips
+   horizontally, so the divider of whichever item starts a line (the first
+   one, or one that wrapped) falls outside and is never drawn: no stray bar
+   at the start of a line at any width or content length. The 12px inline
+   padding keeps the live dot's pulse ring inside the clip. */
+.home-hero__meta {
+  --meta-gap: 33px;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px var(--meta-gap);
+  min-width: 0;
+  margin: 0 0 0 -12px;
+  padding: 0 0 0 12px;
+  overflow-x: clip;
+  list-style: none;
+}
+.home-hero__meta-item {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  gap: 9px;
+  color: var(--c-text-2);
+  font-family: var(--f-mono);
+  font-size: 0.72rem;
+  letter-spacing: 0.02em;
+  white-space: nowrap;
+}
+.home-hero__meta-item::before {
+  content: '';
+  position: absolute;
+  top: 50%;
+  left: calc(var(--meta-gap) / -2 - 0.5px);
+  width: 1px;
+  height: 14px;
+  margin-top: -7px;
+  background: var(--c-line-strong);
+}
+.home-hero__meta-item svg {
+  width: 14px;
+  height: 14px;
+  color: var(--c-text-3);
+}
+.home-hero__meta-item--live { color: var(--c-text); }
+.home-hero__meta-item--live .dot-live { width: 7px; height: 7px; }
+
+.home-hero__cue {
+  display: inline-flex;
+  align-items: center;
+  gap: 12px;
+  padding: 6px 8px;
+  border-radius: var(--r-pill);
+  color: var(--c-text-3);
+  font-family: var(--f-mono);
+  font-size: var(--t-label);
+  letter-spacing: var(--ls-label);
+  text-transform: uppercase;
+  white-space: nowrap;
+  transition: color var(--d-hover) var(--ease-out);
+}
+.home-hero__cue:hover,
+.home-hero__cue:focus-visible { color: var(--c-text); }
+
+.home-hero__cue-track {
+  position: relative;
+  display: block;
+  width: 20px;
+  height: 32px;
+  border: 1px solid var(--c-line-strong);
+  border-radius: 11px;
+}
+.home-hero__cue-dot {
+  position: absolute;
+  top: 6px;
+  left: 50%;
+  width: 3px;
+  height: 7px;
+  margin-left: -1.5px;
+  border-radius: 2px;
+  background: var(--c-mint);
+  box-shadow: 0 0 8px rgba(var(--c-signal-rgb), 0.6);
+  animation: home-cue 2.2s var(--ease-in-out) infinite;
+}
+@keyframes home-cue {
+  0% { opacity: 0; transform: translate3d(0, -2px, 0); }
+  25% { opacity: 1; }
+  70% { opacity: 1; transform: translate3d(0, 12px, 0); }
+  100% { opacity: 0; transform: translate3d(0, 14px, 0); }
+}
+
+.home-hero__index {
+  justify-self: end;
+  margin: 0;
+  color: var(--c-text-3);
+  font-family: var(--f-mono);
+  font-size: var(--t-label);
+  letter-spacing: var(--ls-label);
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+.home-hero__index-num { color: var(--c-mint); }
+
+
+/* --------------------------------------------------------------------------
+   Responsive
+   -------------------------------------------------------------------------- */
+/* Narrower two-column hero: the strip's left group no longer fits half the
+   row, so it takes its natural width (one line) and the cue centres in the
+   space that is left. */
+@media (max-width: 1279px) {
+  .home-hero__strip {
+    grid-template-columns: minmax(0, max-content) minmax(max-content, 1fr) max-content;
+  }
+  .home-hero__cue { justify-self: center; }
+}
+
+@media (max-width: 1199px) {
+  .home-hero__copy { grid-column: 1 / 8; }
+  .home-hero__visual { grid-column: 8 / 13; }
+  /* Shorter measure + chip pulled in: >= 24px between the lead and the role chip. */
+  .home-hero__lead { max-width: 30rem; }
+  .home-chip--status { right: -4%; }
+  .home-chip--role { left: -8%; }
+  .home-chip--time { right: -3%; }
+}
+
+/* Single column: copy, then portrait (keep in sync with Hero.tsx DESKTOP_QUERY). */
+@media (max-width: 959px) {
+  .home-hero {
+    min-height: 0;
+    padding-top: clamp(108px, 16vw, 132px);
+  }
+  .home-hero__layout {
+    grid-template-columns: minmax(0, 1fr);
+    row-gap: clamp(56px, 10vw, 84px);
+    padding-bottom: clamp(48px, 9vw, 72px);
+  }
+  .home-hero__copy,
+  .home-hero__visual { grid-column: 1 / -1; }
+  .home-hero__copy { will-change: auto; }
+  .home-hero__visual {
+    justify-self: center;
+    width: min(420px, 100% - 24px);
+    max-width: none;
+  }
+  .home-hero__stage { will-change: auto; }
+  .home-hero__title { font-size: clamp(2.75rem, 9.6vw, 4.9rem); }
+  .home-orbits { width: 132%; }
+  .home-chip--status { top: 7%; right: -5%; }
+  .home-chip--role { bottom: 13%; left: -6%; }
+  .home-chip--time { bottom: 3%; right: -4%; }
+  .home-hero__strip { grid-template-columns: minmax(0, 1fr) auto; }
+  .home-hero__cue { display: none; }
+}
+
+@media (max-width: 599px) {
+  .home-hero__title { font-size: clamp(2.45rem, 11.4vw, 3.4rem); }
+  .home-hero__kicker {
+    gap: 10px;
+    padding: 8px 14px 8px 12px;
+    font-size: 0.64rem;
+    letter-spacing: 0.1em;
+  }
+  .home-hero__ctas { gap: 10px; }
+  .home-hero__ctas .btn--lg {
+    --btn-h: 54px;
+    --btn-pad: 22px;
+    --btn-icon: 32px;
+    font-size: 0.95rem;
+  }
+  /* Crowded on phones (it would collide with the role chip); the header and
+     footer show the local time. */
+  .home-chip--time { display: none; }
+  .home-chip--status { top: 6%; right: -2%; }
+  .home-chip--role { bottom: 9%; left: -3%; }
+  .home-chip__float { padding: 9px 13px 9px 10px; gap: 10px; }
+  .home-chip__icon { width: 32px; height: 32px; }
+  .home-chip__strong { font-size: 0.86rem; }
+  .home-hero__strip {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 14px;
+  }
+  .home-hero__meta { row-gap: 10px; }
+  .home-hero__index { justify-self: start; }
+}
+
+@media (max-width: 380px) {
+  .home-hero__ctas .fx-magnetic,
+  .home-hero__ctas .btn { width: 100%; }
+}
+
+
+/* --------------------------------------------------------------------------
+   Reduced motion: no orbit spin, border spin, chip float or cue loop.
+   -------------------------------------------------------------------------- */
+@media (prefers-reduced-motion: reduce) {
+  .home-orbits__ring,
+  .home-portrait__frame::before,
+  .home-chip__float,
+  .home-hero__cue-dot { animation: none; }
+  .home-hero__cue-dot { opacity: 1; transform: translate3d(0, 6px, 0); }
+  .home-portrait__img { transition: none; }
+  .home-portrait:hover .home-portrait__img { transform: none; }
+}

@@ -1,0 +1,131 @@
+/* ==========================================================================
+   Design tokens: "Signal over noise"
+   --------------------------------------------------------------------------
+   Tokens only: no selectors other than :root live in this file.
+   IMPORTANT: the legacy admin stylesheet (styles/legacy-admin.css) owns the
+   old variable names (--bg, --surface, --surface2, --stroke, --text, --muted,
+   --faint, --mint, --mint-dark, --purple, --display, --mono). Never redefine
+   them here; every public token uses the new prefixed names below.
+
+   Conventions
+   - --c-*      colors              --f-*   font stacks
+   - --t-*      type sizes          --lh-*  line heights     --ls-* letter spacing
+   - --r-*      radii               --s-*   section spacing
+   - --z-*      stacking order      --d-*   durations        --ease-* easings
+   - *-rgb      comma separated channels for translucent tints:
+                rgba(var(--c-signal-rgb), .2)   /   rgba(var(--accent-rgb), .3)
+   ========================================================================== */
+
+:root {
+  /* ---------- 3.1 Color: ink (backgrounds, darkest -> lightest) ---------- */
+  --c-ink-0: #05070b; /* deepest: footer, overlays */
+  --c-ink-1: #080b11; /* page background */
+  --c-ink-2: #0c1118; /* raised section background */
+  --c-ink-3: #111821; /* cards */
+  --c-ink-4: #18212c; /* hover surfaces, inputs */
+  --c-ink-0-rgb: 5, 7, 11;
+  --c-ink-1-rgb: 8, 11, 17;
+
+  /* ---------- Hairlines ---------- */
+  --c-line: rgba(255, 255, 255, 0.08);
+  --c-line-strong: rgba(255, 255, 255, 0.14);
+
+  /* ---------- Text ---------- */
+  --c-text: #eef2f7;   /* primary */
+  --c-text-2: #a7b2c0; /* secondary copy */
+  --c-text-3: #808d9b; /* tertiary: labels only (5.8:1 on ink-1, 5.3 on ink-3, 4.8 on ink-4 / header glass) */
+
+  /* ---------- Signal palette ---------- */
+  --c-mint: #b3f6d0;   /* brand accent */
+  --c-signal: #5cf0a8; /* vivid: dots, glows */
+  --c-cyan: #7ad7f0;
+  --c-violet: #a5adff;
+  --c-amber: #f4c38a;  /* echoes the warm rim light of the portrait */
+  --c-rose: #f5a3b5;
+  --c-blue: #8fb8ff;
+
+  --c-mint-rgb: 179, 246, 208;
+  --c-signal-rgb: 92, 240, 168;
+  --c-cyan-rgb: 122, 215, 240;
+  --c-violet-rgb: 165, 173, 255;
+  --c-amber-rgb: 244, 195, 138;
+  --c-rose-rgb: 245, 163, 181;
+  --c-blue-rgb: 143, 184, 255;
+
+  /* ---------- Gradients ---------- */
+  --grad-signal: linear-gradient(100deg, #b3f6d0 0%, #7ad7f0 48%, #a5adff 100%);
+  --grad-warm: linear-gradient(100deg, #f4c38a 0%, #f5a3b5 100%);
+
+  /* ---------- Per-element accent (overridden by .accent--* in base.css) ----------
+     Project accents: emerald #5cf0a8, violet #a5adff, blue #8fb8ff,
+     orange #f4c38a, rose #f5a3b5. Default = signal. */
+  --accent: #5cf0a8;
+  --accent-rgb: 92, 240, 168;
+
+  /* ---------- 3.2 Type: font stacks ---------- */
+  --f-display: 'Space Grotesk', system-ui, sans-serif;
+  --f-serif: 'Instrument Serif', Georgia, serif;
+  --f-body: 'DM Sans', system-ui, sans-serif;
+  --f-mono: 'JetBrains Mono', ui-monospace, monospace;
+
+  /* ---------- Type scale (fluid) ---------- */
+  --t-hero: clamp(3rem, 7.4vw, 7.25rem);
+  --t-1: clamp(2.6rem, 6vw, 5.5rem);
+  --t-2: clamp(2.1rem, 4.4vw, 4rem);
+  --t-3: clamp(1.3rem, 2vw, 1.7rem);
+  --t-lead: clamp(1.05rem, 1.25vw, 1.22rem);
+  --t-body: 1rem;
+  --t-small: 0.875rem;
+  --t-label: 0.72rem;
+
+  --lh-hero: 0.94;
+  --lh-1: 0.98;
+  --lh-2: 1.02;
+  --lh-3: 1.2;
+  --lh-lead: 1.65;
+  --lh-body: 1.7;
+
+  --ls-hero: -0.045em;
+  --ls-1: -0.04em;
+  --ls-2: -0.035em;
+  --ls-3: -0.02em;
+  --ls-label: 0.14em;
+
+  /* ---------- 3.3 Space & layout ---------- */
+  --gutter: clamp(20px, 5vw, 56px);
+  --container: 1240px;
+  --container-wide: 1440px;
+  --container-narrow: 760px;
+  --s-section: clamp(96px, 13vw, 176px);
+
+  /* ---------- Shape ---------- */
+  --r-xs: 8px;
+  --r-sm: 12px;
+  --r-md: 18px;
+  --r-lg: 28px;
+  --r-xl: 40px;
+  --r-pill: 999px;
+
+  /* ---------- Depth ---------- */
+  --shadow-card: inset 0 1px 0 rgba(255, 255, 255, 0.05), 0 30px 80px -32px rgba(0, 0, 0, 0.7);
+  --glow-signal: 0 0 0 1px rgba(92, 240, 168, 0.25), 0 0 42px rgba(92, 240, 168, 0.18);
+
+  /* ---------- Stacking order ---------- */
+  --z-header: 50;
+  --z-progress: 60;
+  --z-overlay: 70;   /* mobile menu */
+  --z-palette: 80;   /* command palette */
+  --z-cursor: 90;
+  --z-grain: 95;
+  --z-preloader: 100;
+
+  /* ---------- 3.4 Motion ---------- */
+  --ease-out: cubic-bezier(0.16, 1, 0.3, 1);      /* expo out: default for reveals */
+  --ease-in-out: cubic-bezier(0.65, 0, 0.35, 1);
+  --d-hover: 220ms;   /* hover / focus feedback (180-280ms) */
+  --d-hover-slow: 280ms;
+  --d-reveal: 800ms;  /* content reveal */
+  --d-headline: 1000ms; /* headline word reveal (60ms stagger) */
+  --d-enter: 700ms;   /* page enter */
+  --d-exit: 350ms;    /* page exit */
+}

@@ -1,0 +1,92 @@
+{
+  "site": {
+    "name": "Joy Chandra Mollik",
+    "shortName": "Joy Mollik",
+    "title": "Software Engineer · Backend & AI",
+    "heroKicker": "HELLO, I'M JOY — BASED IN BANGLADESH",
+    "heroLine1": "I build the systems",
+    "heroLine2": "behind great ideas.",
+    "heroDescription": "Software engineer focused on reliable backend architecture, financial infrastructure, and AI-powered products. I turn complex requirements into things people actually love using.",
+    "aboutHeading": "Engineer by craft. Curious by default.",
+    "aboutText": "I'm a software engineer with experience building platforms end to end — from thoughtful React interfaces to event-driven Node.js services. Today I focus on backend systems, payments infrastructure, cloud integrations, and the details that make software resilient. I enjoy collaborating across disciplines, mentoring teammates, and turning ambitious ideas into maintainable products.",
+    "location": "Sylhet, Bangladesh",
+    "availability": "Open to interesting collaborations",
+    "email": "",
+    "resumeUrl": "",
+    "heroImage": "/images/joy-hero.webp",
+    "portraitImage": "/images/joy-portrait.webp",
+    "socials": { "github": "", "linkedin": "", "website": "" },
+    "stats": [
+      { "value": "3+", "label": "Years in software" },
+      { "value": "5+", "label": "Products & platforms" },
+      { "value": "∞", "label": "Curiosity for building" }
+    ],
+    "skillGroups": [
+      { "title": "Backend & data", "items": ["Node.js", "TypeScript", "Express", "MongoDB", "PostgreSQL", "Redis", "MySQL"] },
+      { "title": "Cloud & infrastructure", "items": ["AWS Lambda", "AWS SQS", "Docker", "RabbitMQ", "S3", "WebSockets"] },
+      { "title": "Products & intelligence", "items": ["Stripe Connect", "Stripe Treasury", "React", "OpenAI", "Claude", "Gemini", "D3.js"] }
+    ],
+    "experience": [
+      { "company": "Yotech Ltd. (VALT Tech BD)", "role": "Software Developer · Backend", "period": "Mar 2025 — Present", "location": "Sylhet, Bangladesh", "description": "Building event-driven restaurant and payments infrastructure, including wallet orchestration, Stripe Connect/Treasury integrations, AWS queues, and realtime services." },
+      { "company": "SJ Innovation LLC", "role": "Junior Software Engineer", "period": "Jul 2023 — Mar 2025", "location": "Sylhet, Bangladesh", "description": "Developed MERN products and AI collaboration tools, led feature delivery, and worked across APIs, React applications, cloud services, and realtime integrations." },
+      { "company": "SJ Innovation LLC", "role": "Software Engineering Intern", "period": "Apr 2023 — Jun 2023", "location": "Sylhet, Bangladesh", "description": "Contributed to a social platform for medical professionals and improved existing code through refactoring and product feature work." }
+    ]
+  },
+  "projects": [
+    {
+      "title": "Wallets & Payments Infrastructure", "slug": "wallets-payments-infrastructure",
+      "category": "FINTECH / BACKEND", "summary": "A flexible wallet layer for a multi-tenant restaurant ecosystem.",
+      "description": "Designed and developed backend workflows for owner-to-wallet relationships, transaction distribution, payouts, and Stripe-connected financial operations. Built for reliability, traceability, and business-scale complexity.",
+      "stack": ["Node.js", "MongoDB", "Stripe", "AWS SQS", "Redis"], "featured": true, "order": 1,
+      "accent": "emerald", "imageUrl": "", "links": { "github": "", "demo": "" }, "status": "published"
+    },
+    {
+      "title": "CollabAI", "slug": "collabai",
+      "category": "AI / PRODUCT", "summary": "An intelligent workspace that brings multiple AI models together.",
+      "description": "Helped lead a collaborative AI platform integrating OpenAI, Claude, Gemini, and other model providers. Developed agent interactions, knowledge-base workflows, function calling, and realtime collaboration features.",
+      "stack": ["React", "Node.js", "OpenAI", "Claude", "Socket.io"], "featured": true, "order": 2,
+      "accent": "violet", "imageUrl": "", "links": { "github": "", "demo": "" }, "status": "published"
+    },
+    {
+      "title": "Meddit", "slug": "meddit",
+      "category": "SOCIAL / FULL STACK", "summary": "A knowledge-sharing community designed for medical professionals.",
+      "description": "Worked on a MERN-based professional network featuring personalized feeds, topic moderation, image privacy, realtime capabilities, and export/reporting workflows.",
+      "stack": ["React", "Express", "MongoDB", "Redis", "Bull"], "featured": true, "order": 3,
+      "accent": "blue", "imageUrl": "", "links": { "github": "", "demo": "" }, "status": "published"
+    },
+    {
+      "title": "Insuppent", "slug": "insuppent",
+      "category": "SAAS / FULL STACK", "summary": "Subscription-powered lead discovery and sales workflows.",
+      "description": "Implemented authentication, role-based access, subscriptions, pricing controls, and payment flows, connecting a modern frontend to robust Node.js and MySQL services.",
+      "stack": ["React", "Node.js", "MySQL", "Stripe", "Nginx"], "featured": false, "order": 4,
+      "accent": "orange", "imageUrl": "", "links": { "github": "", "demo": "" }, "status": "published"
+    },
+    {
+      "title": "U-Learn", "slug": "u-learn",
+      "category": "EDTECH / CAPSTONE", "summary": "A student-led learning and collaboration platform.",
+      "description": "Built a learning management system with role-based course creation, lesson structure, reviews, approvals, dashboards, and realtime interactions as a university capstone project.",
+      "stack": ["React", "Node.js", "MongoDB", "Socket.io"], "featured": false, "order": 5,
+      "accent": "rose", "imageUrl": "", "links": { "github": "", "demo": "" }, "status": "published"
+    }
+  ],
+  "posts": [
+    {
+      "title": "Designing resilient payment workflows with Node.js", "slug": "resilient-payment-workflows-nodejs",
+      "excerpt": "A practical look at idempotency, retries, and event-driven design for financial operations.",
+      "tags": ["Backend", "Payments", "Architecture"], "status": "published", "coverImage": "", "publishedAt": "2026-10-22T10:00:00.000Z",
+      "body": "> **Example article:** This is starter content for the portfolio. Review and rewrite it in your own voice before launching.\n\nPayment integrations are rarely complicated because of a single API call. They become difficult when requests time out, webhooks arrive twice, and downstream services temporarily disagree.\n\n## Think in states, not requests\n\nModel the operation as an explicit state machine: `initiated → processing → succeeded / failed`. Keep state transitions idempotent, and assign a stable business identifier to each operation.\n\n## Embrace retries carefully\n\nAt-least-once delivery is common in queues and webhook systems. Store provider event IDs, use unique indexes to reject duplicates, and make handlers safe to run more than once.\n\n## Keep a trail\n\nCapture correlation IDs and sanitized metadata for every important transition. Logs should help answer *what happened* without exposing secrets.\n\nA good payments backend optimizes first for correctness and recovery, then for throughput."
+    },
+    {
+      "title": "When Redis and queues make a backend simpler", "slug": "redis-queues-backend",
+      "excerpt": "Knowing when to reach for asynchronous processing — and when not to.",
+      "tags": ["Node.js", "Redis", "System Design"], "status": "published", "coverImage": "", "publishedAt": "2026-09-28T10:00:00.000Z",
+      "body": "> **Example article:** This is starter content. Customize it before publishing your site.\n\nQueues can protect user-facing endpoints from slow downstream work. They also introduce operational complexity: retries, dead letters, and observability.\n\n## A good use case\n\nEmail delivery, report generation, and event fan-out usually benefit from asynchronous workers. Keep HTTP paths fast and move noncritical work to the background.\n\n## What to monitor\n\nTrack processing lag, retry counts, poison messages, and worker health. Set a maximum retry policy and a deliberate dead-letter workflow.\n\nThe best architecture isn't the one with the most components — it's the one your team can understand and operate."
+    },
+    {
+      "title": "Building AI features without tying your product to one model", "slug": "model-agnostic-ai-products",
+      "excerpt": "Notes on provider adapters, context boundaries, and maintainable LLM integrations.",
+      "tags": ["AI", "Engineering", "Product"], "status": "published", "coverImage": "", "publishedAt": "2026-08-14T10:00:00.000Z",
+      "body": "> **Example article:** Replace this draft with your own experience before going live.\n\nSupporting multiple LLM providers is less about switching endpoint URLs and more about isolating differences in capabilities.\n\n## Build an adapter layer\n\nDefine a small internal interface for messages, tools, streaming, and usage metadata. Translate provider-specific request and response shapes at the boundary.\n\n## Treat prompts as product code\n\nVersion prompts, test important flows, and keep private context out of logs. Make model errors intelligible to users without leaking internal details.\n\n## Design for graceful degradation\n\nA provider timeout should not cascade into a broken application. Timeouts, quotas, and fallback strategies belong in the core design."
+    }
+  ]
+}

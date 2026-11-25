@@ -1,0 +1,397 @@
+/* ==========================================================================
+   SkillConstellation (components/SkillConstellation.tsx)
+   --------------------------------------------------------------------------
+   Frameless: the host (About panel, Home bento cell) provides the card;
+   the map brings its own inner padding, fills the height the host gives
+   it and centres the stage in any spare room (legend stays at the foot).
+   Every SVG part takes its group tone from --g / --g-rgb (set inline from
+   the token palette), so the map always matches the design tokens.
+   States on the root:
+     [data-live]     false until the first bloom (orbs + links fade in)
+     [data-focus]    true while a node or a group is focused (dims the rest)
+     [data-dragging] true while an orb is being dragged
+     [data-visible]  set by the IntersectionObserver (pauses CSS loops)
+   ========================================================================== */
+
+.constellation {
+  --cst-edge: rgba(255, 255, 255, 0.06);
+  --cst-pad: clamp(16px, 2vw, 26px);
+  position: relative;
+  display: flex;
+  flex: 1 1 auto;
+  flex-direction: column;
+  gap: 14px;
+  width: 100%;
+  min-width: 0;
+  max-width: 100%;
+  padding: var(--cst-pad);
+  container-type: inline-size;
+}
+
+/* Host adapter: the map's direct wrapper (e.g. a Reveal inside a bento
+   cell that is stretched to its row) becomes a column, so the map can fill
+   that height. Zero specificity: any host rule wins. */
+:where(:has(> .constellation)) {
+  display: flex;
+  flex-direction: column;
+}
+
+
+/* --------------------------------------------------------------------------
+   1. Meta header: INTERACTIVE SKILL MAP ........ POWERED BY D3.JS ●
+   -------------------------------------------------------------------------- */
+.constellation-meta {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  color: var(--c-text-3);
+  font-family: var(--f-mono);
+  font-size: var(--t-label);
+  font-weight: 500;
+  line-height: 1.4;
+  letter-spacing: var(--ls-label);
+  text-transform: uppercase;
+}
+.constellation-meta > span:first-child {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.constellation-meta-live {
+  display: inline-flex;
+  flex: none;
+  align-items: center;
+  gap: 10px;
+  color: var(--c-text-2);
+}
+.constellation-meta-dot {
+  width: 6px;
+  height: 6px;
+}
+
+
+/* --------------------------------------------------------------------------
+   2. Stage: dotted star-chart field behind the SVG
+   -------------------------------------------------------------------------- */
+.constellation-stage {
+  position: relative;
+  display: flex;
+  flex: 1 1 auto;
+  flex-direction: column;
+  justify-content: center;
+  width: 100%;
+  min-height: 220px;
+}
+.constellation-stage::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  border-radius: var(--r-md);
+  pointer-events: none;
+  background-image: radial-gradient(rgba(255, 255, 255, 0.11) 1px, transparent 1.4px);
+  background-position: center;
+  background-size: 22px 22px;
+  -webkit-mask-image: radial-gradient(ellipse 70% 62% at 50% 50%, #000 20%, transparent 80%);
+  mask-image: radial-gradient(ellipse 70% 62% at 50% 50%, #000 20%, transparent 80%);
+  opacity: 0.7;
+}
+
+.constellation-svg {
+  position: relative;
+  z-index: 1;
+  display: block;
+  flex: none;
+  width: 100%;
+  height: auto;
+  overflow: visible;
+  user-select: none;
+  -webkit-user-select: none;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.constellation-empty {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  margin: 0;
+  color: var(--c-text-3);
+  font-family: var(--f-mono);
+  font-size: var(--t-label);
+  letter-spacing: var(--ls-label);
+  text-transform: uppercase;
+}
+
+
+/* --------------------------------------------------------------------------
+   3. Orbit rings around each group center (slow rotation, decorative)
+   -------------------------------------------------------------------------- */
+.constellation-ring {
+  fill: none;
+  stroke: rgba(var(--g-rgb), 0.2);
+  stroke-width: 1;
+  stroke-dasharray: 2 7;
+  transform-box: fill-box;
+  transform-origin: center;
+  opacity: 0;
+  transition:
+    opacity 900ms var(--ease-out) 200ms,
+    stroke var(--d-hover-slow) var(--ease-out);
+  animation: constellation-orbit 90s linear infinite;
+}
+.constellation-ring--outer {
+  stroke: rgba(255, 255, 255, 0.05);
+  stroke-dasharray: none;
+  animation: none;
+}
+.constellation[data-live='true'] .constellation-ring { opacity: 1; }
+.constellation[data-visible='false'] .constellation-ring { animation-play-state: paused; }
+.constellation-rings .is-group .constellation-ring { stroke: rgba(var(--g-rgb), 0.45); }
+.constellation-rings .is-group .constellation-ring--outer { stroke: rgba(var(--g-rgb), 0.12); }
+.constellation[data-focus='true'] .constellation-rings > g:not(.is-group) { opacity: 0.35; }
+.constellation-rings > g { transition: opacity var(--d-hover-slow) var(--ease-out); }
+
+@keyframes constellation-orbit {
+  to { transform: rotate(360deg); }
+}
+
+
+/* --------------------------------------------------------------------------
+   4. Links (same-group constellation lines)
+   -------------------------------------------------------------------------- */
+.constellation-links {
+  opacity: 0;
+  transition: opacity 900ms var(--ease-out) 450ms;
+}
+.constellation[data-live='true'] .constellation-links { opacity: 1; }
+
+.constellation-link {
+  stroke: rgb(var(--g-rgb));
+  stroke-opacity: 0.22;
+  stroke-width: 1;
+  stroke-linecap: round;
+  transition:
+    stroke-opacity var(--d-hover-slow) var(--ease-out),
+    stroke-width var(--d-hover-slow) var(--ease-out);
+}
+.constellation[data-focus='true'] .constellation-link { stroke-opacity: 0.05; }
+.constellation[data-focus='true'] .constellation-link.is-group {
+  stroke-opacity: 0.7;
+  stroke-width: 1.25;
+}
+
+
+/* --------------------------------------------------------------------------
+   5. Orbs
+      g.constellation-orb          position (transform attribute, JS)
+        g.constellation-orb-body   entrance (opacity + scale, staggered)
+          g.constellation-orb-focus  hover / dim (opacity + scale)
+   -------------------------------------------------------------------------- */
+.constellation-orb {
+  outline: none;
+}
+.constellation--drag .constellation-orb { cursor: grab; }
+.constellation[data-dragging='true'],
+.constellation[data-dragging='true'] .constellation-orb { cursor: grabbing; }
+
+.constellation-orb-body {
+  transform-box: fill-box;
+  transform-origin: center;
+  opacity: 0;
+  transform: scale(0.35);
+  transition:
+    opacity 600ms var(--ease-out),
+    transform 1100ms var(--ease-out);
+  transition-delay: calc(var(--i, 0) * 32ms);
+}
+.constellation[data-live='true'] .constellation-orb-body {
+  opacity: 1;
+  transform: none;
+}
+
+.constellation-orb-focus {
+  transform-box: fill-box;
+  transform-origin: center;
+  transition:
+    opacity var(--d-hover-slow) var(--ease-out),
+    transform 420ms var(--ease-out);
+}
+.constellation-orb.is-dim .constellation-orb-focus { opacity: 0.2; }
+.constellation-orb.is-active .constellation-orb-focus { transform: scale(1.08); }
+
+/* Soft glow behind each orb. */
+.constellation-halo {
+  opacity: 0.28;
+  pointer-events: none;
+  transition: opacity 420ms var(--ease-out);
+}
+.constellation-orb.is-group .constellation-halo { opacity: 0.6; }
+.constellation-orb.is-active .constellation-halo { opacity: 1; }
+
+/* Opaque core keeps links and rings from showing through the glass. */
+.constellation-orb-base { fill: #0a0f16; }
+
+.constellation-orb-edge {
+  fill: none;
+  stroke: rgba(var(--g-rgb), 0.42);
+  stroke-width: 1;
+  transition:
+    stroke var(--d-hover) var(--ease-out),
+    stroke-width var(--d-hover) var(--ease-out);
+}
+.constellation-orb.is-group .constellation-orb-edge { stroke: rgba(var(--g-rgb), 0.7); }
+.constellation-orb.is-active .constellation-orb-edge {
+  stroke: rgba(var(--g-rgb), 1);
+  stroke-width: 1.5;
+}
+
+.constellation-orb-inner {
+  fill: none;
+  stroke: rgba(var(--g-rgb), 0.1);
+  stroke-width: 1;
+  pointer-events: none;
+}
+
+.constellation-label {
+  fill: rgb(var(--g-rgb));
+  font-family: var(--f-display);
+  font-weight: 600;
+  letter-spacing: -0.01em;
+  pointer-events: none;
+  transition: fill var(--d-hover) var(--ease-out);
+}
+.constellation-orb.is-active .constellation-label { fill: var(--c-text); }
+
+
+/* --------------------------------------------------------------------------
+   6. Focus tag: the group title floating above the focused orb
+   -------------------------------------------------------------------------- */
+.constellation-tag {
+  pointer-events: none;
+  animation: constellation-tag-in 260ms var(--ease-out) both;
+}
+.constellation-tag rect {
+  fill: rgba(var(--c-ink-0-rgb), 0.9);
+  stroke: rgba(var(--g-rgb), 0.5);
+  stroke-width: 1;
+}
+.constellation-tag-dot { fill: rgb(var(--g-rgb)); }
+.constellation-tag text {
+  fill: rgb(var(--g-rgb));
+  font-family: var(--f-mono);
+  font-size: 9.5px;
+  font-weight: 500;
+}
+
+@keyframes constellation-tag-in {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+
+/* --------------------------------------------------------------------------
+   7. Legend: one toggle per group (hover / focus / click to highlight)
+   -------------------------------------------------------------------------- */
+.constellation-legend {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+}
+
+.constellation-key {
+  display: inline-flex;
+  align-items: center;
+  gap: 9px;
+  min-height: 34px;
+  max-width: 100%;
+  padding: 5px 12px 5px 11px;
+  border: 1px solid var(--c-line);
+  border-radius: var(--r-pill);
+  background: rgba(255, 255, 255, 0.02);
+  color: var(--c-text-2);
+  font-family: var(--f-body);
+  font-size: 0.8rem;
+  font-weight: 500;
+  line-height: 1.2;
+  text-align: left;
+  transition:
+    border-color var(--d-hover) var(--ease-out),
+    background-color var(--d-hover) var(--ease-out),
+    color var(--d-hover) var(--ease-out),
+    opacity var(--d-hover) var(--ease-out);
+}
+.constellation-key:hover,
+.constellation-key.is-active,
+.constellation-key[aria-pressed='true'] {
+  border-color: rgba(var(--g-rgb), 0.5);
+  background: rgba(var(--g-rgb), 0.08);
+  color: var(--c-text);
+}
+.constellation[data-focus='true'] .constellation-key:not(.is-active) { opacity: 0.55; }
+
+.constellation-key-swatch {
+  flex: none;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: rgb(var(--g-rgb));
+  box-shadow: 0 0 10px rgba(var(--g-rgb), 0.7);
+}
+.constellation-key-title {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.constellation-key-count {
+  flex: none;
+  color: var(--c-text-3);
+  font-family: var(--f-mono);
+  font-size: 0.68rem;
+  letter-spacing: 0.04em;
+}
+.constellation-key.is-active .constellation-key-count,
+.constellation-key[aria-pressed='true'] .constellation-key-count { color: rgb(var(--g-rgb)); }
+
+.constellation-hint {
+  margin-left: auto;
+  padding-left: 4px;
+  color: var(--c-text-3);
+  font-family: var(--f-mono);
+  font-size: 0.66rem;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+
+
+/* --------------------------------------------------------------------------
+   8. Narrow hosts (bento cells, phones)
+   -------------------------------------------------------------------------- */
+@container (max-width: 440px) {
+  .constellation-meta-by { display: none; }
+  .constellation-key {
+    min-height: 32px;
+    padding-inline: 10px 11px;
+    font-size: 0.76rem;
+  }
+  .constellation-hint { display: none; }
+}
+
+
+/* --------------------------------------------------------------------------
+   9. Reduced motion: static layout, no loops, no entrance
+   -------------------------------------------------------------------------- */
+@media (prefers-reduced-motion: reduce) {
+  .constellation-ring { animation: none; }
+  .constellation-orb-body,
+  .constellation-links,
+  .constellation-ring {
+    transition: none;
+  }
+  .constellation-tag { animation: none; }
+}

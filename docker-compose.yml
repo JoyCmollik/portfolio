@@ -1,0 +1,16 @@
+# Local MongoDB for development; bound to loopback to avoid public exposure.
+services:
+  mongo:
+    image: mongo:7
+    restart: unless-stopped
+    ports:
+      - "127.0.0.1:27017:27017"
+    volumes:
+      - mongo_data:/data/db
+    healthcheck:
+      test: ["CMD", "mongosh", "--quiet", "--eval", "db.adminCommand({ping:1}).ok"]
+      interval: 15s
+      timeout: 5s
+      retries: 5
+volumes:
+  mongo_data:

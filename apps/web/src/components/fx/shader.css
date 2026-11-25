@@ -1,0 +1,155 @@
+/* ==========================================================================
+   ShaderBackdrop (fx-shader*)
+   The WebGL aurora behind hero sections. The canvas is created imperatively by
+   ShaderBackdrop.tsx; this file positions it, fades it in, draws the edge
+   vignette + bottom fade, and provides the no-WebGL gradient fallback.
+
+   Tunable custom properties (set them on the parent or via className):
+     --fx-shader-base         hex colour the shader treats as its background
+                              (read once by JS on mount; default #080b11)
+     --fx-shader-fade         height of the bottom fade into the page (default 30%, 0% = none)
+     --fx-shader-fade-color   colour the bottom fades into (default --c-ink-1)
+     --fx-shader-vignette     edge vignette strength, 0..1 alpha (default .5)
+   ========================================================================== */
+
+/* --------------------------------------------------------------------------
+   Palettes (space-separated RGB channels so alpha can vary per use)
+   -------------------------------------------------------------------------- */
+.fx-shader--signal {
+  --fx-shader-c1: 92 240 168;   /* signal mint */
+  --fx-shader-c2: 122 215 240;  /* cyan */
+  --fx-shader-c3: 165 173 255;  /* violet */
+}
+
+.fx-shader--warm {
+  --fx-shader-c1: 244 195 138;  /* amber */
+  --fx-shader-c2: 245 163 181;  /* rose */
+  --fx-shader-c3: 165 173 255;  /* violet */
+}
+
+/* --------------------------------------------------------------------------
+   Host: fills the positioned parent, never intercepts input
+   -------------------------------------------------------------------------- */
+.fx-shader {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+  pointer-events: none;
+  user-select: none;
+  contain: layout paint size;
+}
+
+/* --------------------------------------------------------------------------
+   Canvas: rendered at reduced resolution, upscaled smoothly by the browser.
+   Starts transparent; JS adds --visible after the first frame is drawn.
+   -------------------------------------------------------------------------- */
+.fx-shader__canvas {
+  position: absolute;
+  inset: 0;
+  display: block;
+  width: 100%;
+  height: 100%;
+  opacity: 0;
+  transition: opacity 800ms var(--ease-out, cubic-bezier(0.16, 1, 0.3, 1));
+}
+
+.fx-shader__canvas--visible {
+  opacity: 1;
+}
+
+/* --------------------------------------------------------------------------
+   Edge vignette + bottom fade, painted above the canvas (tree order).
+   Shared by the WebGL and fallback renderings.
+   -------------------------------------------------------------------------- */
+.fx-shader::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background:
+    linear-gradient(
+      to bottom,
+      transparent calc(100% - var(--fx-shader-fade, 30%)),
+      var(--fx-shader-fade-color, var(--c-ink-1, #080b11)) 100%
+    ),
+    radial-gradient(
+      125% 95% at 50% 42%,
+      transparent 52%,
+      rgb(5 7 11 / var(--fx-shader-vignette, 0.5)) 100%
+    );
+}
+
+/* --------------------------------------------------------------------------
+   Fallback (no WebGL, shader failure, or a lost context): layered soft
+   radial light in the same palette, with a slow drift when motion is allowed.
+   -------------------------------------------------------------------------- */
+.fx-shader--fallback {
+  background:
+    radial-gradient(62% 46% at 60% 30%, rgb(var(--fx-shader-c3) / 0.12), transparent 70%),
+    radial-gradient(52% 40% at 26% 68%, rgb(var(--fx-shader-c1) / 0.08), transparent 72%);
+}
+
+/* Two blurred diagonal bands that rise to the right, echoing the shader's curtains. */
+.fx-shader--fallback::before {
+  content: '';
+  position: absolute;
+  inset: -20%;
+  background:
+    linear-gradient(
+      164deg,
+      transparent 36%,
+      rgb(var(--fx-shader-c3) / 0.1) 42%,
+      rgb(var(--fx-shader-c2) / 0.26) 46.5%,
+      transparent 49%
+    ),
+    linear-gradient(
+      158deg,
+      transparent 50%,
+      rgb(var(--fx-shader-c2) / 0.07) 55%,
+      rgb(var(--fx-shader-c1) / 0.3) 59%,
+      transparent 61.5%
+    );
+  filter: blur(22px);
+  animation: fx-shader-drift 24s var(--ease-in-out, cubic-bezier(0.65, 0, 0.35, 1)) infinite alternate;
+}
+
+@keyframes fx-shader-drift {
+  from {
+    transform: translate3d(-4%, 2%, 0) rotate(-4deg) scale(1);
+  }
+  to {
+    transform: translate3d(5%, -3%, 0) rotate(5deg) scale(1.08);
+  }
+}
+
+/* --------------------------------------------------------------------------
+   Preferences + media
+   -------------------------------------------------------------------------- */
+/* Motion paused by the visitor (lib/motion.ts): the WebGL loop stops in JS. */
+:root[data-motion='paused'] .fx-shader--fallback::before {
+  animation-play-state: paused;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .fx-shader__canvas {
+    transition-duration: 200ms;
+  }
+
+  .fx-shader--fallback::before {
+    animation: none;
+  }
+}
+
+/* High-contrast / forced-colors modes: decorative light only gets in the way. */
+@media (forced-colors: active) {
+  .fx-shader {
+    display: none;
+  }
+}
+
+@media print {
+  .fx-shader {
+    display: none;
+  }
+}

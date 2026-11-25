@@ -1,0 +1,609 @@
+/* ==========================================================================
+   Base: global reset + unprefixed primitives (spec 4.2)
+   --------------------------------------------------------------------------
+   Loaded after tokens.css and before legacy-admin.css (see main.tsx).
+   Rules of the road
+   - The admin Content Studio shares this document. The only bare element
+     selectors here are the legacy resets the admin was built on; do not add
+     new ones (h1 / p / ul margins etc. belong to scoped feature CSS).
+   - Reserved admin class names (spec 4.3) are never styled here, with ONE
+     documented exception: the .admin-main compatibility rule below.
+   - Keyframes are named fx-* (shared) or base-* (local to this file).
+   ========================================================================== */
+
+
+/* --------------------------------------------------------------------------
+   1. Legacy global resets (verbatim: the admin relies on them)
+   -------------------------------------------------------------------------- */
+* { box-sizing: border-box; }
+body { margin: 0; min-width: 320px; }
+button, input, textarea, select { font: inherit; }
+button { cursor: pointer; }
+a { color: inherit; text-decoration: none; }
+img { display: block; max-width: 100%; }
+
+
+/* --------------------------------------------------------------------------
+   2. Document
+   -------------------------------------------------------------------------- */
+html {
+  background: var(--c-ink-1);
+  color-scheme: dark;
+  -webkit-text-size-adjust: 100%;
+  text-size-adjust: 100%;
+  /* Anchor jumps (#contact, skip link) land below the fixed header. */
+  scroll-padding-top: 96px;
+  /* Thin, dark page scrollbar. */
+  scrollbar-width: thin;
+  scrollbar-color: #2a3542 transparent;
+}
+
+body {
+  background: var(--c-ink-1);
+  color: var(--c-text);
+  font-family: var(--f-body);
+  font-size: var(--t-body);
+  line-height: var(--lh-body);
+  font-synthesis: none;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  text-rendering: optimizeLegibility;
+}
+
+/* overflow-x: clip (NOT hidden) so position: sticky keeps working. */
+#root {
+  overflow-x: clip;
+  min-height: 100vh;
+}
+
+/* The public <main id="main"> receives programmatic focus (skip link,
+   route changes); it is a landmark, not a control, so no ring. */
+#main:focus { outline: none; }
+
+
+/* --------------------------------------------------------------------------
+   3. Admin compatibility (the ONLY rule in public CSS that touches a
+      reserved class). Restores exactly what the old global :root gave the
+      Content Studio, so its look is pixel-identical:
+      - original text color and body font (public body uses --c-text);
+      - default line height (public body uses 1.7);
+      - static DM Sans metrics (the public font request adds the opsz axis;
+        pinning opsz 14 reproduces the static instance the admin was built
+        on at every size; fonts without an opsz axis ignore it);
+      - light color scheme for native controls (<select>, Google sign-in
+        iframe) and default nested scrollbars.
+   -------------------------------------------------------------------------- */
+.admin-main {
+  color: #e9edf5;
+  font-family: 'DM Sans', sans-serif;
+  line-height: normal;
+  font-variation-settings: 'opsz' 14;
+  color-scheme: light;
+  scrollbar-color: auto;
+}
+
+
+/* --------------------------------------------------------------------------
+   4. Accessibility: focus, selection, skip link, screen-reader text
+   -------------------------------------------------------------------------- */
+:focus-visible {
+  outline: 2px solid var(--c-signal);
+  outline-offset: 3px;
+}
+
+::selection {
+  background: var(--c-mint);
+  color: var(--c-ink-1);
+}
+
+.skip-link {
+  position: fixed;
+  z-index: calc(var(--z-preloader) + 1);
+  top: 12px;
+  left: 12px;
+  display: inline-flex;
+  align-items: center;
+  height: 44px;
+  padding: 0 20px;
+  border-radius: var(--r-pill);
+  background: var(--c-mint);
+  color: var(--c-ink-1);
+  font: 600 0.9rem/1 var(--f-display);
+  box-shadow: 0 12px 32px -12px rgba(0, 0, 0, 0.8);
+  transform: translateY(calc(-100% - 24px));
+  transition: transform var(--d-hover) var(--ease-out);
+}
+.skip-link:focus,
+.skip-link:focus-visible {
+  transform: none;
+  outline-color: var(--c-text);
+}
+
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  clip-path: inset(50%);
+  white-space: nowrap;
+  border: 0;
+}
+
+
+/* --------------------------------------------------------------------------
+   5. Smooth scroll (Lenis 1.3)
+   -------------------------------------------------------------------------- */
+html.lenis,
+html.lenis body {
+  height: auto;
+}
+.lenis.lenis-smooth {
+  scroll-behavior: auto !important;
+}
+.lenis.lenis-smooth [data-lenis-prevent],
+.lenis [data-lenis-prevent],
+.lenis [data-lenis-prevent-wheel],
+.lenis [data-lenis-prevent-touch] {
+  overscroll-behavior: contain;
+}
+.lenis:not(.lenis-autoToggle).lenis-stopped,
+.lenis.lenis-stopped {
+  overflow: clip;
+}
+.lenis.lenis-smooth iframe {
+  pointer-events: none;
+}
+.lenis.lenis-autoToggle {
+  transition-property: overflow;
+  transition-duration: 1ms;
+  transition-behavior: allow-discrete;
+}
+
+
+/* --------------------------------------------------------------------------
+   6. Layout
+   -------------------------------------------------------------------------- */
+.container,
+.container--wide,
+.container--narrow {
+  width: min(var(--container), 100% - 2 * var(--gutter));
+  margin-inline: auto;
+}
+.container--wide { width: min(var(--container-wide), 100% - 2 * var(--gutter)); }
+.container--narrow { width: min(var(--container-narrow), 100% - 2 * var(--gutter)); }
+
+.section {
+  position: relative;
+  padding-block: var(--s-section);
+}
+/* Section rhythm: two adjacent sections share the space between them instead
+   of stacking two full paddings (352px of near-empty band at 1440). Each side
+   of the seam keeps ~2/3 of --s-section, so banded sections (hairline +
+   raised background) stay symmetric around the line; the full value remains
+   after the hero and before the contact panel's own top padding.
+   :where() keeps each rule at one class of specificity, so an area stylesheet
+   that tunes its own section padding (loaded later) still wins. */
+.section:where(.section + *) { padding-top: calc(var(--s-section) * 0.68); }
+.section:where(:has(+ .section, + #contact)) { padding-bottom: calc(var(--s-section) * 0.68); }
+.section--tight { padding-block: calc(var(--s-section) * 0.6); }
+
+/* Accent scopes: set --accent / --accent-rgb for any descendant.
+   Usage: rgba(var(--accent-rgb), .25), color: var(--accent). */
+.accent--emerald { --accent: #5cf0a8; --accent-rgb: 92, 240, 168; }
+.accent--violet  { --accent: #a5adff; --accent-rgb: 165, 173, 255; }
+.accent--blue    { --accent: #8fb8ff; --accent-rgb: 143, 184, 255; }
+.accent--orange  { --accent: #f4c38a; --accent-rgb: 244, 195, 138; }
+.accent--rose    { --accent: #f5a3b5; --accent-rgb: 245, 163, 181; }
+
+
+/* --------------------------------------------------------------------------
+   7. Typography
+   -------------------------------------------------------------------------- */
+.display-hero,
+.display-1,
+.display-2,
+.display-3 {
+  margin: 0;
+  color: var(--c-text);
+  font-family: var(--f-display);
+  font-weight: 600;
+  text-wrap: balance;
+  font-kerning: normal;
+}
+.display-hero {
+  font-size: var(--t-hero);
+  line-height: var(--lh-hero);
+  letter-spacing: var(--ls-hero);
+}
+.display-1 {
+  font-size: var(--t-1);
+  line-height: var(--lh-1);
+  letter-spacing: var(--ls-1);
+}
+.display-2 {
+  font-size: var(--t-2);
+  line-height: var(--lh-2);
+  letter-spacing: var(--ls-2);
+}
+.display-3 {
+  font-size: var(--t-3);
+  font-weight: 500;
+  line-height: var(--lh-3);
+  letter-spacing: var(--ls-3);
+}
+
+/* Italic serif accent: ONE emphasized phrase per heading at most.
+   Plain text gets gradient text here. When RevealText wraps the words
+   (.fx-word > .fx-word__inner, transformed), background-clip on this parent
+   cannot paint through the transformed children: fx.css paints each word
+   itself, and this element must then stay a plain container (no clip). */
+.serif-accent {
+  font-family: var(--f-serif);
+  font-style: italic;
+  font-weight: 400;
+  font-size: 1.04em;
+  letter-spacing: -0.01em;
+  /* The italic overhang would be clipped by background-clip: text. */
+  padding-inline-end: 0.08em;
+  margin-inline-end: -0.04em;
+  background: var(--grad-signal);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+  -webkit-text-fill-color: transparent;
+  -webkit-box-decoration-break: clone;
+  box-decoration-break: clone;
+}
+.text-gradient {
+  background: var(--grad-signal);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+  -webkit-text-fill-color: transparent;
+}
+
+/* Per-word case (RevealText inside): fx.css paints every .fx-word__inner with
+   its own slice of the gradient, so the wrapper drops its own clip/paint. */
+.serif-accent:has(.fx-word),
+.text-gradient:has(.fx-word) {
+  padding-inline-end: 0;
+  margin-inline-end: 0;
+  background: none;
+  -webkit-background-clip: border-box;
+  background-clip: border-box;
+}
+
+.lead {
+  margin: 0;
+  color: var(--c-text-2);
+  font-size: var(--t-lead);
+  line-height: var(--lh-lead);
+  text-wrap: pretty;
+}
+
+.muted { color: var(--c-text-2); }
+.faint { color: var(--c-text-3); }
+.mono { font-family: var(--f-mono); }
+
+/* Tiny mono uppercase label: "01 / PORTFOLIO". */
+.label {
+  color: var(--c-text-3);
+  font-family: var(--f-mono);
+  font-size: var(--t-label);
+  font-weight: 500;
+  line-height: 1.4;
+  letter-spacing: var(--ls-label);
+  text-transform: uppercase;
+}
+.label--accent { color: var(--c-mint); }
+
+/* Kicker:
+   <p class="kicker"><span class="kicker__index">01</span>
+     <span class="kicker__line"></span><span>Selected work</span></p> */
+.kicker {
+  display: inline-flex;
+  align-items: center;
+  gap: 12px;
+  margin: 0;
+  color: var(--c-text-2);
+  font-family: var(--f-mono);
+  font-size: var(--t-label);
+  font-weight: 500;
+  line-height: 1.4;
+  letter-spacing: var(--ls-label);
+  text-transform: uppercase;
+}
+.kicker__index { color: var(--c-mint); }
+.kicker__line {
+  flex: none;
+  width: 36px;
+  height: 1px;
+  background: linear-gradient(90deg, var(--c-mint), rgba(var(--c-mint-rgb), 0.15));
+}
+
+
+/* --------------------------------------------------------------------------
+   8. Buttons
+   <a class="btn btn--primary fx-roll-host">
+     <RollText text="Explore my work"/>
+     <span class="btn__icon"><ArrowRight/></span></a>
+   -------------------------------------------------------------------------- */
+.btn {
+  --btn-h: 52px;
+  --btn-pad: 24px;
+  --btn-icon: 30px;
+  position: relative;
+  isolation: isolate;
+  display: inline-flex;
+  flex: none;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  height: var(--btn-h);
+  padding: 0 var(--btn-pad);
+  border: 1px solid transparent;
+  border-radius: var(--r-pill);
+  background: transparent;
+  color: var(--c-text);
+  font-family: var(--f-display);
+  font-size: 0.95rem;
+  font-weight: 600;
+  line-height: 1;
+  letter-spacing: -0.01em;
+  white-space: nowrap;
+  text-decoration: none;
+  cursor: pointer;
+  user-select: none;
+  -webkit-tap-highlight-color: transparent;
+  transition:
+    background-color var(--d-hover) var(--ease-out),
+    border-color var(--d-hover) var(--ease-out),
+    box-shadow var(--d-hover-slow) var(--ease-out),
+    color var(--d-hover) var(--ease-out),
+    transform var(--d-hover) var(--ease-out);
+}
+.btn:active { transform: translateY(1px) scale(0.985); }
+.btn:disabled,
+.btn[aria-disabled='true'] {
+  opacity: 0.5;
+  pointer-events: none;
+}
+/* A trailing icon circle sits closer to the pill edge. */
+.btn:has(> .btn__icon:last-child) { padding-inline-end: calc((var(--btn-h) - var(--btn-icon)) / 2 - 1px); }
+.btn:has(> .btn__icon:first-child) { padding-inline-start: calc((var(--btn-h) - var(--btn-icon)) / 2 - 1px); }
+
+.btn__icon {
+  display: inline-grid;
+  flex: none;
+  place-items: center;
+  width: var(--btn-icon);
+  height: var(--btn-icon);
+  overflow: hidden;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.08);
+  transition:
+    transform var(--d-hover-slow) var(--ease-out),
+    background-color var(--d-hover) var(--ease-out);
+}
+.btn__icon svg {
+  width: 16px;
+  height: 16px;
+  transition: transform 450ms var(--ease-out);
+}
+.btn:hover .btn__icon,
+.btn:focus-visible .btn__icon { transform: translateX(3px); }
+/* Default: the arrow slides out to the right and back in from the left
+   (works for any arrow direction). */
+.btn:hover .btn__icon svg,
+.btn:focus-visible .btn__icon svg { animation: fx-btn-arrow 560ms var(--ease-out); }
+/* .btn__icon--rotate: turn a right arrow into a diagonal "go" arrow instead. */
+.btn:hover .btn__icon--rotate svg,
+.btn:focus-visible .btn__icon--rotate svg {
+  animation: none;
+  transform: rotate(-45deg);
+}
+@keyframes fx-btn-arrow {
+  0% { transform: translateX(0); opacity: 1; }
+  42% { transform: translateX(130%); opacity: 0; }
+  43% { transform: translateX(-130%); opacity: 0; }
+  100% { transform: translateX(0); opacity: 1; }
+}
+
+/* Primary: mint pill, ink text, inner highlight, glow on hover. */
+.btn--primary {
+  background: var(--c-mint);
+  color: var(--c-ink-1);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.65),
+    inset 0 -1px 0 rgba(0, 0, 0, 0.12),
+    0 10px 30px -14px rgba(var(--c-signal-rgb), 0.55);
+}
+.btn--primary:hover,
+.btn--primary:focus-visible {
+  background: #c9fbe0;
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.75),
+    inset 0 -1px 0 rgba(0, 0, 0, 0.1),
+    0 0 0 1px rgba(var(--c-signal-rgb), 0.35),
+    0 14px 44px -10px rgba(var(--c-signal-rgb), 0.6);
+}
+.btn--primary .btn__icon {
+  background: var(--c-ink-1);
+  color: var(--c-mint);
+}
+
+/* Ghost: glass + hairline. */
+.btn--ghost {
+  border-color: var(--c-line-strong);
+  background: rgba(255, 255, 255, 0.035);
+  -webkit-backdrop-filter: blur(16px) saturate(140%);
+  backdrop-filter: blur(16px) saturate(140%);
+  color: var(--c-text);
+}
+.btn--ghost:hover,
+.btn--ghost:focus-visible {
+  border-color: rgba(var(--c-mint-rgb), 0.38);
+  background: rgba(255, 255, 255, 0.07);
+}
+.btn--ghost:hover .btn__icon,
+.btn--ghost:focus-visible .btn__icon {
+  background: var(--c-mint);
+  color: var(--c-ink-1);
+}
+
+/* Sizes */
+.btn--lg {
+  --btn-h: 60px;
+  --btn-pad: 30px;
+  --btn-icon: 36px;
+  font-size: 1rem;
+}
+.btn--sm {
+  --btn-h: 40px;
+  --btn-pad: 16px;
+  --btn-icon: 24px;
+  gap: 8px;
+  font-size: 0.85rem;
+}
+.btn--sm .btn__icon svg {
+  width: 13px;
+  height: 13px;
+}
+
+
+/* --------------------------------------------------------------------------
+   9. Chips, live dot, glass, grid
+   -------------------------------------------------------------------------- */
+.chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 30px;
+  padding: 5px 12px;
+  border: 1px solid var(--c-line-strong);
+  border-radius: var(--r-pill);
+  background: rgba(255, 255, 255, 0.025);
+  color: var(--c-text-2);
+  font-size: 0.78rem;
+  font-weight: 500;
+  line-height: 1.2;
+  white-space: nowrap;
+  transition:
+    border-color var(--d-hover) var(--ease-out),
+    background-color var(--d-hover) var(--ease-out),
+    color var(--d-hover) var(--ease-out);
+}
+.chip--mono {
+  font-family: var(--f-mono);
+  font-size: 0.72rem;
+  letter-spacing: 0.02em;
+}
+.chip--accent {
+  border-color: rgba(var(--accent-rgb), 0.3);
+  background: rgba(var(--accent-rgb), 0.08);
+  color: var(--accent);
+}
+
+/* Live signal dot with an expanding pulse ring. */
+.dot-live {
+  position: relative;
+  display: inline-block;
+  flex: none;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--c-signal);
+  box-shadow: 0 0 10px rgba(var(--c-signal-rgb), 0.75);
+  vertical-align: middle;
+}
+.dot-live::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  background: var(--c-signal);
+  opacity: 0;
+  animation: fx-pulse 2.4s var(--ease-out) infinite;
+}
+/* Motion paused by the visitor (lib/motion.ts setMotionPaused): a still dot. */
+:root[data-motion='paused'] .dot-live::after { animation: none; }
+@keyframes fx-pulse {
+  0% {
+    opacity: 0.55;
+    transform: scale(1);
+  }
+  80%,
+  100% {
+    opacity: 0;
+    transform: scale(3.2);
+  }
+}
+
+/* Frosted glass surface. */
+.glass {
+  border: 1px solid var(--c-line);
+  background: rgba(255, 255, 255, 0.035);
+  -webkit-backdrop-filter: blur(16px) saturate(140%);
+  backdrop-filter: blur(16px) saturate(140%);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.05);
+}
+
+/* Fine hairline grid that fades out radially. Parent must be positioned. */
+.grid-bg {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background-image:
+    linear-gradient(rgba(255, 255, 255, 0.04) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(255, 255, 255, 0.04) 1px, transparent 1px);
+  background-position: center top;
+  background-size: 64px 64px;
+  -webkit-mask-image: radial-gradient(ellipse 75% 65% at 50% 40%, #000 25%, transparent 78%);
+  mask-image: radial-gradient(ellipse 75% 65% at 50% 40%, #000 25%, transparent 78%);
+}
+
+
+/* --------------------------------------------------------------------------
+   10. Route loading fallback (lazy routes: admin, lab)
+   -------------------------------------------------------------------------- */
+.route-fallback {
+  display: grid;
+  min-height: 60vh;
+  place-items: center;
+}
+.route-fallback__inner {
+  display: inline-flex;
+  align-items: center;
+  gap: 12px;
+}
+
+
+/* --------------------------------------------------------------------------
+   11. Reduced motion: everything lands in its final state immediately.
+       (JS-driven motion checks usePrefersReducedMotion() as well.)
+   -------------------------------------------------------------------------- */
+@media (prefers-reduced-motion: reduce) {
+  html {
+    scroll-behavior: auto !important;
+  }
+  *,
+  *::before,
+  *::after {
+    scroll-behavior: auto !important;
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}
+
+/* Visitor "Pause motion" control (WCAG 2.2.2): the Marquee toggle sets :root[data-motion='paused'] site-wide.
+   Freeze every looping CSS animation on the public site (hero floats, scroll cues, chips, rings...), not just
+   the fx primitives. Scoped to .site-main and portaled overlays via :not(.admin-main) so the admin is untouched. */
+:root[data-motion='paused'] body :not(.admin-main, .admin-main *),
+:root[data-motion='paused'] body :not(.admin-main, .admin-main *)::before,
+:root[data-motion='paused'] body :not(.admin-main, .admin-main *)::after {
+  animation-play-state: paused !important;
+}

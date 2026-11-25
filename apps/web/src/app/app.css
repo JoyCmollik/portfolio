@@ -1,0 +1,104 @@
+/* ==================================================================================================
+   App shell states (foundation): page loading placeholder and error screen.
+   Prefix: app-. Uses tokens + base primitives only.
+   ================================================================================================== */
+
+/* --------------------------------------------------------------------------
+   1. Page placeholder: Suspense fallback for a lazy public page.
+      Holds the viewport so the footer does not jump up while the chunk loads,
+      and only shows its label if loading is genuinely slow (prefetching means
+      it is normally never visible at all). Reduced motion: the global rule
+      in base.css shortens the fade, so the label simply appears.
+   -------------------------------------------------------------------------- */
+.app-page-placeholder {
+  display: grid;
+  min-height: 100svh;
+  place-items: center;
+}
+.app-page-placeholder__label {
+  display: inline-flex;
+  align-items: center;
+  gap: 12px;
+  opacity: 0;
+  animation: app-fade-in 400ms var(--ease-out) 600ms forwards;
+}
+
+@keyframes app-fade-in {
+  to { opacity: 1; }
+}
+
+
+/* --------------------------------------------------------------------------
+   2. Error screen (route boundary and root boundary)
+   -------------------------------------------------------------------------- */
+.app-error {
+  position: relative;
+  overflow: clip;
+  isolation: isolate;
+  display: grid;
+  align-items: center;
+  min-height: min(100svh, 980px);
+  padding-block: clamp(140px, 16vw, 200px) clamp(80px, 10vw, 140px);
+}
+.app-error--fullscreen {
+  min-height: 100svh;
+  padding-block: clamp(64px, 10vw, 120px);
+}
+.app-error > .grid-bg { z-index: -1; }
+.app-error__glow {
+  position: absolute;
+  top: 8%;
+  left: 50%;
+  z-index: -1;
+  width: min(1100px, 120vw);
+  height: 70%;
+  background:
+    radial-gradient(closest-side, rgba(var(--c-rose-rgb), 0.1), transparent),
+    radial-gradient(closest-side at 70% 60%, rgba(var(--c-violet-rgb), 0.1), transparent);
+  filter: blur(30px);
+  transform: translateX(-50%);
+  pointer-events: none;
+}
+.app-error__inner {
+  display: grid;
+  justify-items: start;
+  gap: clamp(20px, 2.6vw, 30px);
+}
+.app-error__terminal {
+  display: inline-flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px 14px;
+  max-width: 100%;
+  margin: 0 0 clamp(8px, 2vw, 20px);
+  padding: 10px 16px;
+  border: 1px solid var(--c-line);
+  border-radius: var(--r-sm);
+  background: rgba(var(--c-ink-0-rgb), 0.6);
+  color: var(--c-text-2);
+  font-family: var(--f-mono);
+  font-size: 0.82rem;
+  overflow-wrap: anywhere;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.04);
+}
+.app-error__prompt { color: var(--c-signal); }
+.app-error__path { color: var(--c-text); }
+.app-error__status {
+  padding: 2px 8px;
+  border-radius: 6px;
+  background: rgba(var(--c-rose-rgb), 0.14);
+  color: var(--c-rose);
+  font-size: 0.72rem;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+.app-error__title { max-width: 14ch; }
+.app-error__lead { max-width: 52ch; margin: 0; }
+.app-error__actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  margin-top: 8px;
+}
+

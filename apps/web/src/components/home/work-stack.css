@@ -1,0 +1,419 @@
+/* ==========================================================================
+   Home: selected work (components/home/WorkStack.tsx)
+   --------------------------------------------------------------------------
+   .home-stack--sticky  desktop + motion: sticky stacking cards (JS scales/dims)
+   .home-stack--list    phones / tablets / reduced motion: plain revealed cards
+   Card: .home-pcard (fx-spotlight uses its ::before/::after; the stretched
+   title link uses the link's own ::after).
+   ========================================================================== */
+
+.home-work { padding-bottom: calc(var(--s-section) * 0.85); }
+
+.home-stack {
+  margin: clamp(40px, 6vw, 72px) 0 0;
+  padding: 0;
+  list-style: none;
+}
+
+
+/* --------------------------------------------------------------------------
+   Sticky stack
+   -------------------------------------------------------------------------- */
+.home-stack--sticky {
+  /* Card height: as tall as it reads well, never taller than the space left
+     under the deepest sticky offset. */
+  --stack-h: min(640px, calc(100vh - var(--stack-top) - (var(--stack-n) - 1) * var(--stack-step) - 40px));
+}
+.home-stack--sticky .home-stack__item {
+  position: sticky;
+  height: var(--stack-h);
+  margin-bottom: 14vh;
+}
+.home-stack--sticky .home-stack__item:last-child { margin-bottom: 0; }
+
+.home-stack__scale {
+  position: relative;
+  height: 100%;
+  border-radius: var(--r-xl);
+  transform-origin: 50% 0;
+  will-change: transform;
+}
+.home-stack__dim {
+  position: absolute;
+  inset: 0;
+  z-index: 5;
+  border-radius: inherit;
+  background: var(--c-ink-0);
+  opacity: 0;
+  pointer-events: none;
+}
+
+
+/* --------------------------------------------------------------------------
+   List (no stacking)
+   -------------------------------------------------------------------------- */
+.home-stack--list {
+  display: grid;
+  gap: clamp(18px, 2.4vw, 28px);
+}
+
+
+/* --------------------------------------------------------------------------
+   Card
+   -------------------------------------------------------------------------- */
+.home-pcard {
+  display: grid;
+  grid-template-rows: auto minmax(0, 1fr);
+  height: 100%;
+  overflow: hidden;
+  border: 1px solid var(--c-line-strong);
+  border-radius: var(--r-xl);
+  background:
+    radial-gradient(70% 90% at 100% 0%, rgba(var(--accent-rgb), 0.08), transparent 60%),
+    linear-gradient(180deg, #0f151d 0%, var(--c-ink-2) 100%);
+  box-shadow:
+    var(--shadow-card),
+    0 -18px 50px -30px rgba(0, 0, 0, 0.9);
+  transition: border-color var(--d-hover-slow) var(--ease-out);
+}
+.home-pcard:hover { border-color: rgba(var(--accent-rgb), 0.32); }
+/* Keyboard: the stretched title link holds focus, the whole card shows it. */
+.home-pcard:has(.home-pcard__link:focus-visible) {
+  outline: 2px solid var(--c-signal);
+  outline-offset: 4px;
+}
+
+/* Tab bar: what stays visible when the next card covers this one. */
+.home-pcard__bar {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 20px;
+  height: 46px;
+  padding: 9px clamp(22px, 2.6vw, 36px) 0;
+  border-bottom: 1px solid var(--c-line);
+  color: var(--c-text-3);
+  font-family: var(--f-mono);
+  font-size: 0.7rem;
+  font-weight: 500;
+  line-height: 1.6;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+}
+.home-pcard__tab {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  min-width: 0;
+  color: var(--c-text-2);
+}
+.home-pcard__tab-title {
+  overflow: hidden;
+  color: var(--c-text);
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.home-pcard__slash { color: var(--c-text-3); }
+.home-pcard__dot {
+  flex: none;
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: var(--accent);
+  box-shadow: 0 0 10px rgba(var(--accent-rgb), 0.8);
+}
+.home-pcard__path {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  text-transform: none;
+  letter-spacing: 0.02em;
+}
+
+.home-pcard__body {
+  display: grid;
+  grid-template-columns: minmax(0, 5fr) minmax(0, 7fr);
+  gap: clamp(24px, 3.4vw, 56px);
+  min-height: 0;
+  padding: 12px 12px 12px clamp(24px, 3.2vw, 48px);
+}
+
+.home-pcard__info {
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  padding-block: clamp(14px, 2.4vh, 28px) clamp(12px, 2vh, 24px);
+}
+
+.home-pcard__top {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 16px;
+  margin-bottom: clamp(16px, 3vh, 32px);
+}
+.home-pcard__index {
+  color: transparent;
+  font-family: var(--f-display);
+  font-size: clamp(3.4rem, 6vw, 6rem);
+  font-weight: 500;
+  line-height: 0.8;
+  /* Stroke-only glyphs: any overlap between neighbours shows, so no negative tracking. */
+  letter-spacing: 0;
+  -webkit-text-stroke: 1px rgba(var(--accent-rgb), 0.55);
+  transition: color var(--d-hover-slow) var(--ease-out);
+}
+.home-pcard:hover .home-pcard__index { color: rgba(var(--accent-rgb), 0.12); }
+
+.home-pcard__category {
+  margin: 0;
+  color: var(--accent);
+  font-family: var(--f-mono);
+  font-size: var(--t-label);
+  font-weight: 500;
+  line-height: 1.4;
+  letter-spacing: var(--ls-label);
+  text-align: right;
+  text-transform: uppercase;
+}
+
+/* Index row stays at the top; title -> CTA is one group centred in the
+   remaining height (auto margins), so a tall art panel never leaves a void
+   between the chips and the CTA. */
+.home-pcard__info > .home-pcard__title { margin-top: auto; }
+
+.home-pcard__title {
+  font-size: clamp(1.9rem, 3.1vw, 3rem);
+  line-height: 1.02;
+  text-wrap: balance;
+}
+.home-pcard__link {
+  color: inherit;
+  outline: none;
+}
+.home-pcard__link::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  z-index: 3;
+  border-radius: inherit;
+}
+
+.home-pcard__summary {
+  display: -webkit-box;
+  margin: clamp(12px, 2vh, 20px) 0 0;
+  overflow: hidden;
+  color: var(--c-text-2);
+  font-size: 1rem;
+  line-height: 1.65;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 4;
+  line-clamp: 4;
+}
+
+.home-pcard__chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin: clamp(16px, 2.6vh, 26px) 0 0;
+  padding: 0;
+  list-style: none;
+}
+
+.home-pcard__foot {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  margin-bottom: auto;
+  padding-top: clamp(24px, 3.6vh, 34px);
+}
+.home-pcard__cta {
+  display: inline-flex;
+  align-items: center;
+  gap: 12px;
+  color: var(--c-text);
+  font-family: var(--f-display);
+  font-size: 1rem;
+  font-weight: 600;
+  letter-spacing: -0.01em;
+}
+.home-pcard__cta-icon {
+  display: grid;
+  place-items: center;
+  width: 40px;
+  height: 40px;
+  border: 1px solid rgba(var(--accent-rgb), 0.35);
+  border-radius: 50%;
+  color: var(--accent);
+  transition:
+    background-color var(--d-hover) var(--ease-out),
+    color var(--d-hover) var(--ease-out),
+    transform var(--d-hover-slow) var(--ease-out);
+}
+.home-pcard__cta-icon svg {
+  width: 17px;
+  height: 17px;
+  transition: transform var(--d-hover-slow) var(--ease-out);
+}
+.home-pcard:hover .home-pcard__cta-icon,
+.home-pcard:focus-within .home-pcard__cta-icon {
+  background: var(--accent);
+  color: var(--c-ink-1);
+  transform: translateX(4px);
+}
+.home-pcard:hover .home-pcard__cta-icon svg,
+.home-pcard:focus-within .home-pcard__cta-icon svg { transform: rotate(-45deg); }
+
+.home-pcard__links {
+  position: relative;
+  z-index: 4;
+  display: inline-flex;
+  gap: 8px;
+}
+.home-pcard__icon-link {
+  display: grid;
+  place-items: center;
+  width: 40px;
+  height: 40px;
+  border: 1px solid var(--c-line-strong);
+  border-radius: 50%;
+  color: var(--c-text-2);
+  transition:
+    border-color var(--d-hover) var(--ease-out),
+    color var(--d-hover) var(--ease-out),
+    background-color var(--d-hover) var(--ease-out);
+}
+.home-pcard__icon-link:hover,
+.home-pcard__icon-link:focus-visible {
+  border-color: rgba(var(--accent-rgb), 0.5);
+  background: rgba(var(--accent-rgb), 0.1);
+  color: var(--accent);
+}
+.home-pcard__icon-link svg { width: 17px; height: 17px; }
+
+.home-pcard__media {
+  position: relative;
+  min-height: 0;
+  overflow: hidden;
+  border: 1px solid var(--c-line);
+  border-radius: calc(var(--r-xl) - 12px);
+}
+
+
+/* --------------------------------------------------------------------------
+   Archive link
+   -------------------------------------------------------------------------- */
+.home-work__end { margin-top: clamp(40px, 6vw, 72px); }
+
+.home-work__archive {
+  position: relative;
+  isolation: isolate;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto auto;
+  align-items: center;
+  gap: clamp(16px, 3vw, 40px);
+  padding: clamp(22px, 3vw, 34px) clamp(4px, 1vw, 12px);
+  border-block: 1px solid var(--c-line);
+  color: var(--c-text);
+}
+.home-work__archive::before {
+  content: '';
+  position: absolute;
+  inset: -1px 0;
+  z-index: -1;
+  background: linear-gradient(90deg, rgba(var(--c-mint-rgb), 0.07), rgba(var(--c-mint-rgb), 0.01) 70%, transparent);
+  transform: scaleX(0);
+  transform-origin: 0 50%;
+  transition: transform 700ms var(--ease-out);
+}
+.home-work__archive:hover::before,
+.home-work__archive:focus-visible::before { transform: scaleX(1); }
+
+.home-work__archive-label {
+  font-family: var(--f-display);
+  font-size: clamp(1.4rem, 3vw, 2.6rem);
+  font-weight: 500;
+  line-height: 1.1;
+  letter-spacing: -0.035em;
+}
+.home-work__archive-label .fx-roll { white-space: normal; }
+.home-work__archive-count {
+  color: var(--c-text-3);
+  font-family: var(--f-mono);
+  font-size: var(--t-label);
+  letter-spacing: var(--ls-label);
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+.home-work__archive-icon {
+  display: grid;
+  place-items: center;
+  width: clamp(48px, 5vw, 64px);
+  height: clamp(48px, 5vw, 64px);
+  border: 1px solid var(--c-line-strong);
+  border-radius: 50%;
+  color: var(--c-mint);
+  transition:
+    background-color var(--d-hover) var(--ease-out),
+    border-color var(--d-hover) var(--ease-out),
+    color var(--d-hover) var(--ease-out),
+    transform var(--d-hover-slow) var(--ease-out);
+}
+.home-work__archive-icon svg {
+  width: 22px;
+  height: 22px;
+  transition: transform var(--d-hover-slow) var(--ease-out);
+}
+.home-work__archive:hover .home-work__archive-icon,
+.home-work__archive:focus-visible .home-work__archive-icon {
+  border-color: var(--c-mint);
+  background: var(--c-mint);
+  color: var(--c-ink-1);
+}
+.home-work__archive:hover .home-work__archive-icon svg,
+.home-work__archive:focus-visible .home-work__archive-icon svg { transform: rotate(45deg); }
+
+
+/* --------------------------------------------------------------------------
+   Responsive (list mode)
+   -------------------------------------------------------------------------- */
+/* Tablet: side by side, fixed height. */
+@media (min-width: 768px) {
+  .home-stack--list .home-pcard { min-height: 520px; }
+}
+
+/* Phones: art on top, info below; no tab bar. */
+@media (max-width: 767px) {
+  .home-pcard { border-radius: var(--r-lg); }
+  .home-pcard__bar { display: none; }
+  .home-pcard__body {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 4px;
+    padding: 10px;
+  }
+  .home-pcard__media {
+    order: -1;
+    aspect-ratio: 4 / 3;
+    border-radius: calc(var(--r-lg) - 10px);
+  }
+  .home-pcard__info { padding: 18px 12px 10px; }
+  .home-pcard__top { margin-bottom: 14px; }
+  .home-pcard__index { font-size: 3rem; }
+  .home-pcard__title { font-size: clamp(1.7rem, 7.4vw, 2.2rem); }
+  .home-pcard__summary { font-size: 0.95rem; -webkit-line-clamp: 5; line-clamp: 5; }
+  .home-work__archive {
+    grid-template-columns: minmax(0, 1fr) auto;
+  }
+  .home-work__archive-count { display: none; }
+}
+
+
+/* --------------------------------------------------------------------------
+   Reduced motion
+   -------------------------------------------------------------------------- */
+@media (prefers-reduced-motion: reduce) {
+  .home-work__archive::before { transition: none; }
+  .home-pcard__cta-icon,
+  .home-pcard__cta-icon svg { transition: none; }
+}
