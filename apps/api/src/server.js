@@ -73,18 +73,21 @@ app.use((err, _req, res, _next) => {
 
 const port = Number(process.env.PORT || 4000);
 if (!process.env.MONGODB_URI) {
-  console.error('Missing MONGODB_URI. Copy apps/api/.env.example to apps/api/.env and configure it.');
-  process.exit(1);
+  throw new Error('Missing MONGODB_URI. Copy apps/api/.env.example to apps/api/.env and configure it.');
 }
 if (process.env.NODE_ENV === 'production' && (!process.env.SESSION_SECRET || process.env.SESSION_SECRET.length < 32 || !process.env.BOOTSTRAP_ADMIN_EMAIL)) {
-  console.error('Production requires a strong SESSION_SECRET and BOOTSTRAP_ADMIN_EMAIL.');
-  process.exit(1);
+  throw new Error('Production requires a strong SESSION_SECRET and BOOTSTRAP_ADMIN_EMAIL.');
 }
 try {
+  // Runs once per cold start on Vercel; the connection is reused by later requests on the same instance.
   await mongoose.connect(process.env.MONGODB_URI);
   await seedContentIfEmpty();
-  app.listen(port, () => console.info(`Portfolio API listening on http://localhost:${port}`));
 } catch (err) {
   console.error('Could not connect to MongoDB:', err.message);
-  process.exit(1);
+  throw err;
 }
+// Vercel invokes the exported app as a serverless function; locally/Docker we listen on a port.
+if (!process.env.VERCEL) {
+  app.listen(port, () => console.info(`Portfolio API listening on http://localhost:${port}`));
+}
+export default app;
